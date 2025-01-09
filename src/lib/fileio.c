@@ -25,6 +25,7 @@ int create_unique_backing_store()
   uuid_generate(uuidbin);
   uuid_unparse(uuidbin, uuid);
 
+  // i don't set the null,  i should do that
   memcpy(&uuid[UUIDLEN], STOREEXT, EXTLEN);
 
   fd = open(uuid, O_CREAT | O_DIRECT, S_IRWXU);
