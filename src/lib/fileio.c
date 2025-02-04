@@ -10,29 +10,53 @@
 #include <unistd.h>
 #include <uuid/uuid.h>
 
+#include "./fileio.h"
+#include "./datastructures.h"
+
 #define UUIDLEN 36
-#define EXTLEN 6
+#define STOREEXTLEN 6
+#define METAEXTLEN 5
 #define NULLLEN 1
 
+#define METAEXT ".meta"
 #define STOREEXT ".store"
 
-int create_unique_backing_store()
+int create_new_backing_store()
 {
-  int fd;
-  char uuid[UUIDLEN+EXTLEN+NULLLEN];
+  char metauuidfilename[UUIDLEN+METAEXTLEN+NULLLEN];
+  char storeuuidfilename[UUIDLEN+STOREEXTLEN+NULLLEN];
   uuid_t uuidbin;
 
   uuid_generate(uuidbin);
-  uuid_unparse(uuidbin, uuid);
-
-  // i don't set the null,  i should do that
-  memcpy(&uuid[UUIDLEN], STOREEXT, EXTLEN);
-
-  fd = open(uuid, O_CREAT | O_DIRECT, S_IRWXU);
+  uuid_unparse(uuidbin, metauuidfilename);
+  uuid_unparse(uuidbin, storeuuidfilename);
   
-  return fd;
+  // build the filenames.
+  memcpy(&metauuidfilename[UUIDLEN], METAEXT, METAEXTLEN);
+  memcpy(&storeuuidfilename[UUIDLEN], STOREEXT, STOREEXTLEN);
+
+  // finish the file string.
+  memset(&metauuidfilename[UUIDLEN + METAEXTLEN], '\0', NULLLEN);
+  memset(&storeuuidfilename[UUIDLEN + STOREEXTLEN], '\0', NULLLEN);
+  
+  return 0;
   
 }
 
-void close_backing_store(int backing) { close(backing); }
+int open_backing_store(char *filename)
+{
+  int fd;
+  
+  //fd = open(uuid, O_CREAT | O_DIRECT, S_IRWXU);
+    
+  return fd;
+}
+
+void close_backing_store(backing* store)
+{
+  if (store != NULL){
+    close(store->metafd);
+    
+  }
+}
 

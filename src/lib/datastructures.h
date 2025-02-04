@@ -4,11 +4,41 @@
 
 #include <uuid/uuid.h>
 
-typedef struct subrecord subrecord;
 
-typedef struct record record;
+typedef struct backing {
+  int metafd;
+  int storefd;
+}backing;
 
-typedef struct store store;
+// a subrecord consists of a single "page" of data at a particular version.
+typedef struct subrecord {
+  void *data;
+  uuid_t version;
+}subrecord;
+
+// a record holds three references to previous and future versions,
+// as well as the current version. this linked list method has drawbacks,
+// but for the majority of cases should be *okay*.
+typedef struct record {
+  uuid_t key;
+  
+  subrecord *forward;
+  subrecord *back;
+  
+  subrecord *value;
+
+  record *next;
+  record *prev;
+}record;
+
+// a store is a collection of records, effectively the "database" super
+// structure.
+// currently a linked list structure, but a tree would make this better.
+typedef struct store {
+  uuid_t id;
+  record *head;
+  record *tail;
+}store;
 
 store *create_store();
 

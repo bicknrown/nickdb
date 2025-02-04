@@ -8,37 +8,6 @@
 
 #include "datastructures.h"
 
-
-// a subrecord consists of a single "page" of data at a particular version.
-struct subrecord {
-  void *data;
-  uuid_t version;
-};
-
-// a record holds three references to previous and future versions,
-// as well as the current version. this linked list method has drawbacks,
-// but for the majority of cases should be *okay*.
-struct record {
-  uuid_t key;
-  
-  subrecord *forward;
-  subrecord *back;
-  
-  subrecord *value;
-
-  record *next;
-  record *prev;
-};
-
-// a store is a collection of records, effectively the "database" super
-// structure.
-// currently a linked list structure, but a tree would make this better.
-struct store {
-  uuid_t id;
-  record *head;
-  record *tail;
-};
-
 // functions
 // 
 // create a unique super structure, returns NULL if error.
