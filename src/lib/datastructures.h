@@ -10,6 +10,7 @@ typedef struct backing {
   int storefd;
 }backing;
 
+/*
 // a subrecord consists of a single "page" of data at a particular version.
 typedef struct subrecord {
   void *data;
@@ -27,8 +28,8 @@ typedef struct record {
   
   subrecord *value;
 
-  record *next;
-  record *prev;
+  //record *next;
+  //record *prev;
 }record;
 
 // a store is a collection of records, effectively the "database" super
@@ -53,3 +54,4 @@ int append_record(store *store, record *record);
 int insert_record(store *store, uuid_t key, record *record);
 
 int remove_record(store *store, uuid_t key);
+*/

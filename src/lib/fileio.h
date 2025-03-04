@@ -4,7 +4,7 @@
 
 #include "./datastructures.h"
 
-int create_new_backing_store();
-int open_backing_store(char* filename);
-void close_backing_store(backing* store);
-int remove_backing_store(char* filename);
+backing *create_new_backing_files(char *name);
+backing *open_backing_store(char *name);
+void close_backing_store(backing *files);
+int remove_backing_store(char *filename);

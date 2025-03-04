@@ -10,7 +10,6 @@
 
 int main(int argc, char *argv[]){
 
-  int backing = create_unique_backing_store();
   printf("hello there\n");
   
   return 0;

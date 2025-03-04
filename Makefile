@@ -8,7 +8,7 @@ CFLAGS := -O -g -Wall -Werror -std=c99 -D_DEFAULT_SOURCE -D_GNU_SOURCE
 
 LDFLAGS := -luuid
 
-TESTS :=
+TESTS := fileiotest
 
 SOURCES := src/nickdb.c
 OBJS := $(patsubst %.c,%.o,$(SOURCES))
@@ -39,5 +39,6 @@ clean:
 	rm -f $(TESTS)
 	rm -f *~ nickdb
 	rm -f *.store
+	rm -f *.meta
 
 .PHONY: all clean
