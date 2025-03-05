@@ -12,13 +12,28 @@
 
 #include "./fileio.h"
 
-#define UUIDLEN 36
 #define STOREEXTLEN 6
 #define METAEXTLEN 5
 #define NULLLEN 1
 
+#define PAGESIZE 4096
+
 #define METAEXT ".meta"
 #define STOREEXT ".store"
+
+/*
+  close the files associated with the backing store, and free the structure.
+  if the structure doesn't exist, why are you trying to close it?
+ */
+void close_backing_store(backing* files)
+{
+  if (files != NULL){
+    close(files->storefd);
+    close(files->metafd);
+    free(files);
+    files = NULL;
+  }
+}
 
 /*
   Creates new pair of metadata files and store files, and returns a structure with
@@ -50,9 +65,9 @@ backing *create_new_backing_files(char *name)
   files->metafd = open(metauuidfilename, O_CREAT | O_DIRECT | O_TRUNC | O_RDWR, S_IRWXU);
   files->storefd = open(storeuuidfilename, O_CREAT | O_DIRECT | O_TRUNC | O_RDWR, S_IRWXU);
 
-  // if either open fails, release the memory and return NULL
+  // if either open fails, close the files, just in case, release the memory and return NULL
   if (files->metafd == -1 || files->storefd == -1) {
-    free(files);
+    close_backing_store(files);
     return NULL;
   }
   
@@ -87,9 +102,9 @@ backing *open_backing_store(char *name)
   files->metafd = open(metauuidfilename, O_DIRECT | O_RDWR);
   files->storefd = open(storeuuidfilename, O_DIRECT | O_RDWR);
 
-  // if either open fails, release the memory and return NULL
+  // if either open fails,  close the files, just in case, release the memory, and return NULL
   if (files->metafd == -1 || files->storefd == -1) {
-    free(files);
+    close_backing_store(files);
     return NULL;
   }
   
@@ -97,19 +112,23 @@ backing *open_backing_store(char *name)
 }
 
 /*
-  close the files associated with the backing store, and free the structure.
-  if the structure doesn't exist, why are you trying to close it?
+  remove the named filestore from the disk.
  */
-void close_backing_store(backing* files)
+int remove_backing_store(char *filename)
 {
-  if (files != NULL){
-    close(files->storefd);
-    close(files->metafd);
-    free(files);
-    files = NULL;
-  }
-  else {
-    // ¯\_(ツ)_/¯
-  }
+  return 0;
 }
 
+// page manipulation.
+
+int get_page(void *dest, backing *file, int index)
+{
+  return 0;
+  //
+}
+
+int put_page(void *src, backing *file, int index)
+{
+  return 0;
+  //
+}
