@@ -149,14 +149,34 @@ int remove_backing(char *name)
 // page manipulation.
 
 /*
-  
+  given a page number, this function will return the offset
+  in the backing to where the page starts.
+ */
+int index_to_offset(int index)
+{
+  // 0 indexed, works out nice.
+  return (index * PAGESIZE);
+}
+
+/*
+  find the page, located at `index` in `file`, and copy the
+  data to `dest`.
+  It is assumed that the `dest` pointer can hold at least
+  PAGESIZE bytes.
  */
 int get_page(void *dest, backing *file, int index)
 {
+  int pageloc = index_to_offset(index);
+  if (lseek(file->storefd, pageloc, SEEK_SET) == -1) {
+    // page not found error?
+    return -1;
+  }
+  // read call here.
   return 0;
-  //
 }
-
+/*
+  
+ */
 int put_page(void *src, backing *file, int index)
 {
   return 0;
