@@ -8,7 +8,7 @@ CFLAGS := -O -g -Wall -Werror -std=c99 -D_DEFAULT_SOURCE -D_GNU_SOURCE
 
 LDFLAGS := -luuid
 
-TESTS := fileiotest
+TESTS := fileiotest pageiotest
 
 SOURCES := src/nickdb.c
 OBJS := $(patsubst %.c,%.o,$(SOURCES))

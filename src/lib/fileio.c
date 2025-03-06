@@ -2,6 +2,7 @@
  * Copyright 2025 Nick Brown <njbrown4@buffalo.edu>
  */
 
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -154,7 +155,7 @@ int remove_backing(char *name)
  */
 int index_to_offset(int index)
 {
-  // 0 indexed, works out nice.
+  // 0 indexed. works out nicely.
   return (index * PAGESIZE);
 }
 
@@ -167,11 +168,20 @@ int index_to_offset(int index)
 int get_page(void *dest, backing *file, int index)
 {
   int pageloc = index_to_offset(index);
+  if (file == NULL) {
+    // no backing to read from!
+    return -1;
+  }
   if (lseek(file->storefd, pageloc, SEEK_SET) == -1) {
     // page not found error?
     return -1;
   }
-  // read call here.
+  // attempt to read the page.
+  if (read(file->storefd, dest, PAGESIZE) != PAGESIZE) {
+    // read failed!
+    return -1;
+  }
+  
   return 0;
 }
 /*
@@ -179,6 +189,22 @@ int get_page(void *dest, backing *file, int index)
  */
 int put_page(void *src, backing *file, int index)
 {
+  int pageloc = index_to_offset(index);
+  if (file == NULL) {
+    fprintf(stderr,"no backing to read from!\n");
+    return -1;
+  }
+  if (lseek(file->storefd, pageloc, SEEK_SET) == -1) {
+    fprintf(stderr,"page %i not found\n", index);
+    return -1;
+  }
+  // attempt to read the page.
+  int bytes = write(file->storefd, src, PAGESIZE);
+  if (bytes != PAGESIZE) {
+    fprintf(stderr,"write() failed!, %i bytes written.\n errno: %i\npageoffset: %i\n", bytes, errno, pageloc);
+    perror("error: ");
+    return -1;
+  }
+  
   return 0;
-  //
 }
