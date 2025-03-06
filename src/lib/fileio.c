@@ -25,7 +25,7 @@
   close the files associated with the backing store, and free the structure.
   if the structure doesn't exist, why are you trying to close it?
  */
-void close_backing_store(backing* files)
+void close_backing(backing* files)
 {
   if (files != NULL){
     close(files->storefd);
@@ -41,33 +41,33 @@ void close_backing_store(backing* files)
   Returns NULL on error.
   The new backing will be opened by it's creation.
  */
-backing *create_new_backing_files(char *name)
+backing *create_new_backing(char *name)
 {
   int namelen = strlen(name);
-  char metauuidfilename[namelen+METAEXTLEN+NULLLEN];
-  char storeuuidfilename[namelen+STOREEXTLEN+NULLLEN];
+  char metafilename[namelen+METAEXTLEN+NULLLEN];
+  char storefilename[namelen+STOREEXTLEN+NULLLEN];
   
   // build the filenames.
-  memcpy(&metauuidfilename, name, namelen);
-  memcpy(&storeuuidfilename, name, namelen);
+  memcpy(&metafilename, name, namelen);
+  memcpy(&storefilename, name, namelen);
   
-  memcpy(&metauuidfilename[namelen], METAEXT, METAEXTLEN);
-  memcpy(&storeuuidfilename[namelen], STOREEXT, STOREEXTLEN);
+  memcpy(&metafilename[namelen], METAEXT, METAEXTLEN);
+  memcpy(&storefilename[namelen], STOREEXT, STOREEXTLEN);
 
   // finish the file string.
-  memset(&metauuidfilename[namelen + METAEXTLEN], '\0', NULLLEN);
-  memset(&storeuuidfilename[namelen + STOREEXTLEN], '\0', NULLLEN);
+  memset(&metafilename[namelen + METAEXTLEN], '\0', NULLLEN);
+  memset(&storefilename[namelen + STOREEXTLEN], '\0', NULLLEN);
 
   // allocate the backing to return
   backing *files = calloc(1, sizeof(backing));
 
   // open the files
-  files->metafd = open(metauuidfilename, O_CREAT | O_DIRECT | O_TRUNC | O_RDWR, S_IRWXU);
-  files->storefd = open(storeuuidfilename, O_CREAT | O_DIRECT | O_TRUNC | O_RDWR, S_IRWXU);
+  files->metafd = open(metafilename, O_CREAT | O_DIRECT | O_TRUNC | O_RDWR, S_IRWXU);
+  files->storefd = open(storefilename, O_CREAT | O_DIRECT | O_TRUNC | O_RDWR, S_IRWXU);
 
   // if either open fails, close the files, just in case, release the memory and return NULL
   if (files->metafd == -1 || files->storefd == -1) {
-    close_backing_store(files);
+    close_backing(files);
     return NULL;
   }
   
@@ -78,33 +78,33 @@ backing *create_new_backing_files(char *name)
   Open the store provided by the name, if it does not exist, NULL will
   be returned.
  */
-backing *open_backing_store(char *name)
+backing *open_backing(char *name)
 {
   int namelen = strlen(name);
-  char metauuidfilename[namelen+METAEXTLEN+NULLLEN];
-  char storeuuidfilename[namelen+STOREEXTLEN+NULLLEN];
+  char metafilename[namelen+METAEXTLEN+NULLLEN];
+  char storefilename[namelen+STOREEXTLEN+NULLLEN];
   
   // build the filenames.
-  memcpy(&metauuidfilename, name, namelen);
-  memcpy(&storeuuidfilename, name, namelen);
+  memcpy(&metafilename, name, namelen);
+  memcpy(&storefilename, name, namelen);
   
-  memcpy(&metauuidfilename[namelen], METAEXT, METAEXTLEN);
-  memcpy(&storeuuidfilename[namelen], STOREEXT, STOREEXTLEN);
+  memcpy(&metafilename[namelen], METAEXT, METAEXTLEN);
+  memcpy(&storefilename[namelen], STOREEXT, STOREEXTLEN);
 
   // finish the file string.
-  memset(&metauuidfilename[namelen + METAEXTLEN], '\0', NULLLEN);
-  memset(&storeuuidfilename[namelen + STOREEXTLEN], '\0', NULLLEN);
+  memset(&metafilename[namelen + METAEXTLEN], '\0', NULLLEN);
+  memset(&storefilename[namelen + STOREEXTLEN], '\0', NULLLEN);
 
   // allocate the backing to return
   backing *files = calloc(1, sizeof(backing));
 
   // open the files
-  files->metafd = open(metauuidfilename, O_DIRECT | O_RDWR);
-  files->storefd = open(storeuuidfilename, O_DIRECT | O_RDWR);
+  files->metafd = open(metafilename, O_DIRECT | O_RDWR);
+  files->storefd = open(storefilename, O_DIRECT | O_RDWR);
 
   // if either open fails,  close the files, just in case, release the memory, and return NULL
   if (files->metafd == -1 || files->storefd == -1) {
-    close_backing_store(files);
+    close_backing(files);
     return NULL;
   }
   
@@ -113,14 +113,44 @@ backing *open_backing_store(char *name)
 
 /*
   remove the named filestore from the disk.
+  it is assumed that the files are not in use.
+  
+  return 0 if successful, -1 if the file
+  requested does not exist.
  */
-int remove_backing_store(char *filename)
+int remove_backing(char *name)
 {
+  int namelen = strlen(name);
+  char metafilename[namelen+METAEXTLEN+NULLLEN];
+  char storefilename[namelen+STOREEXTLEN+NULLLEN];
+  
+  // build the filenames.
+  memcpy(&metafilename, name, namelen);
+  memcpy(&storefilename, name, namelen);
+  
+  memcpy(&metafilename[namelen], METAEXT, METAEXTLEN);
+  memcpy(&storefilename[namelen], STOREEXT, STOREEXTLEN);
+
+  // finish the file string.
+  memset(&metafilename[namelen + METAEXTLEN], '\0', NULLLEN);
+  memset(&storefilename[namelen + STOREEXTLEN], '\0', NULLLEN);
+
+  // attempt to remove the files.
+  if (remove(metafilename) != 0) {
+    return -1;
+  }
+  if (remove(storefilename)) {
+    return -1;
+  }
+  
   return 0;
 }
 
 // page manipulation.
 
+/*
+  
+ */
 int get_page(void *dest, backing *file, int index)
 {
   return 0;

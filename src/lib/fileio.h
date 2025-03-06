@@ -5,10 +5,10 @@
 #include "./datastructures.h"
 
 // backing
-backing *create_new_backing_files(char *name);
-backing *open_backing_store(char *name);
-void close_backing_store(backing *files);
-int remove_backing_store(char *filename);
+backing *create_new_backing(char *name);
+backing *open_backing(char *name);
+void close_backing(backing *files);
+int remove_backing(char *filename);
 
 // pages
 int get_page(void *dest, backing *file, int index);
