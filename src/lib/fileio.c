@@ -63,8 +63,8 @@ backing *create_new_backing(char *name)
   backing *files = calloc(1, sizeof(backing));
 
   // open the files
-  files->metafd = open(metafilename, O_CREAT | O_DIRECT | O_TRUNC | O_RDWR, S_IRWXU);
-  files->storefd = open(storefilename, O_CREAT | O_DIRECT | O_TRUNC | O_RDWR, S_IRWXU);
+  files->metafd = open(metafilename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
+  files->storefd = open(storefilename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
 
   // if either open fails, close the files, just in case, release the memory and return NULL
   if (files->metafd == -1 || files->storefd == -1) {
@@ -208,3 +208,6 @@ int put_page(void *src, backing *file, int index)
   
   return 0;
 }
+// allocate_page( ) using the next available index.
+// free_page() overwrite page with special information, linking to the next free page. 
+// fsync queue, based on number of entries or time.
