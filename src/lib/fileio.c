@@ -60,19 +60,35 @@ backing *create_new_backing(char *name)
   memset(&storefilename[namelen + STOREEXTLEN], '\0', NULLLEN);
 
   // allocate the backing to return
-  backing *files = calloc(1, sizeof(backing));
+  backing *file = calloc(1, sizeof(backing));
 
   // open the files
-  files->metafd = open(metafilename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
-  files->storefd = open(storefilename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
+  file->metafd = open(metafilename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
+  file->storefd = open(storefilename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
 
   // if either open fails, close the files, just in case, release the memory and return NULL
-  if (files->metafd == -1 || files->storefd == -1) {
-    close_backing(files);
+  if (file->metafd == -1 || file->storefd == -1) {
+    close_backing(file);
+    return NULL;
+  }
+
+  // initialize metadata page 0.
+  // blank the page, write the values into the struct, then write it to their
+  // storage backing.
+  meta_page *metadata = calloc(1, PAGESIZE);
+  metadata->size = 1; // there is only the metadata page.
+  metadata->freelist_head.offset = -1; // no free pages to start.
+  metadata->freelist_tail.offset = -1; // no free pages to start.
+  
+  int written = pwrite(file->storefd, metadata, PAGESIZE, index_to_offset(0));
+  free(metadata);
+  metadata = NULL;
+  if (written != PAGESIZE){
+    close_backing(file);
     return NULL;
   }
   
-  return files;
+  return file;
 }
 
 /*
@@ -100,8 +116,8 @@ backing *open_backing(char *name)
   backing *files = calloc(1, sizeof(backing));
 
   // open the files
-  files->metafd = open(metafilename, O_DIRECT | O_RDWR);
-  files->storefd = open(storefilename, O_DIRECT | O_RDWR);
+  files->metafd = open(metafilename, O_RDWR);
+  files->storefd = open(storefilename, O_RDWR);
 
   // if either open fails,  close the files, just in case, release the memory, and return NULL
   if (files->metafd == -1 || files->storefd == -1) {
@@ -140,7 +156,7 @@ int remove_backing(char *name)
   if (remove(metafilename) != 0) {
     return -1;
   }
-  if (remove(storefilename)) {
+  if (remove(storefilename) != 0) {
     return -1;
   }
   
@@ -159,8 +175,63 @@ int index_to_offset(int index)
   return (index * PAGESIZE);
 }
 
+int offset_to_index(int offset)
+{
+  if (offset == 0) {
+    return 0;
+  }
+  return (offset / PAGESIZE);
+}
+
+int alloc_page(void *src, backing *file)
+{
+  // read in the metadata.
+  meta_page *metadata = calloc(1, PAGESIZE);
+  int read = pread(file->storefd, metadata, PAGESIZE, index_to_offset(0));
+  if (read != PAGESIZE) {
+    return -1;
+  }
+  
+  // if there are pages on the freelist, use one.
+  if (metadata->freelist_head.offset != -1) {
+    int offset = metadata->freelist_head.offset;
+    int returnindex = offset_to_index(offset);
+    freepage *nextpage = calloc(1, (sizeof(freepage)));
+
+    int read = pread(file->storefd, nextpage, sizeof(freepage), offset);
+    if (read != sizeof(freepage)) {
+      free(metadata);
+      free(nextpage);
+      return -1;
+    }
+    
+    metadata->freelist_head.offset = nextpage->offset;
+
+    int write = pwrite(file->storefd, src, PAGESIZE, offset);
+    if (write != PAGESIZE) {
+      free(metadata);
+      free(nextpage);
+      return -1;
+    }
+
+    int meta_write = pwrite(file->storefd, metadata, PAGESIZE, index_to_offset(0));
+    if (meta_write != PAGESIZE) {
+      free(metadata);
+      free(nextpage);
+      return -1;
+    }
+    free(metadata);
+    free(nextpage);
+    return returnindex;
+  }
+
+  // if there are no free pages, make a new one.
+  // TODO: ^
+  return -1;
+}
+
 /*
-  find the page, located at `index` in `file`, and copy the
+  find the page, located at `index` in `file`, if it exists, and copy the
   data to `dest`.
   It is assumed that the `dest` pointer can hold at least
   PAGESIZE bytes.
@@ -168,6 +239,10 @@ int index_to_offset(int index)
 int get_page(void *dest, backing *file, int index)
 {
   int pageloc = index_to_offset(index);
+  if (pageloc == 0) {
+    // the metadata page is special. no direct reads.
+    return -1;
+  }
   if (file == NULL) {
     // no backing to read from!
     return -1;
@@ -185,11 +260,16 @@ int get_page(void *dest, backing *file, int index)
   return 0;
 }
 /*
-  
+  given that the page exists, copy the full PAGESIZE from `src`
+  to the page specified by `index`
  */
 int put_page(void *src, backing *file, int index)
 {
   int pageloc = index_to_offset(index);
+  if (pageloc == 0) {
+    // the metadata page is special. no direct reads.
+    return -1;
+  }
   if (file == NULL) {
     fprintf(stderr,"no backing to read from!\n");
     return -1;
@@ -208,6 +288,8 @@ int put_page(void *src, backing *file, int index)
   
   return 0;
 }
+
+
 // allocate_page( ) using the next available index.
 // free_page() overwrite page with special information, linking to the next free page. 
 // fsync queue, based on number of entries or time.
