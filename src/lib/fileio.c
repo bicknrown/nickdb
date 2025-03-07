@@ -242,8 +242,36 @@ int alloc_page(void *src, backing *file)
   }
 
   // if there are no free pages, make a new one.
-  // TODO: ^
-  return -1;
+  
+  // current size is also the index of the next page to allocate.
+  int newpage = metadata->size;
+  void *blank_page = calloc(1, PAGESIZE);
+  int blank_write = pwrite(file->storefd, blank_page, PAGESIZE, index_to_offset(newpage));
+  if (blank_write != PAGESIZE) {
+    free(metadata);
+    free(blank_page);
+    return -1;
+  }
+
+  int data_write = pwrite(file->storefd, src, PAGESIZE, index_to_offset(newpage));
+  if (data_write != PAGESIZE) {
+    free(metadata);
+    free(blank_page);
+    return -1;
+  }
+
+  metadata->size = metadata->size + 1; // size is now 1KB larger.
+
+  int meta_write = pwrite(file->storefd, metadata, PAGESIZE, index_to_offset(0));
+  if (meta_write != PAGESIZE) {
+    free(metadata);
+    free(blank_page);
+    return -1;
+  }
+  
+  free(metadata);
+  free(blank_page);
+  return newpage;
 }
 
 /*
