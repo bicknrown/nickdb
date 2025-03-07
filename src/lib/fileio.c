@@ -201,6 +201,10 @@ int offset_to_index(int offset)
 
 int alloc_page(void *src, backing *file)
 {
+  if (file == NULL) {
+    // no backing to read from!
+    return -1;
+  }
   // read in the metadata.
   meta_page *metadata = calloc(1, PAGESIZE);
   int read = pread(file->storefd, metadata, PAGESIZE, index_to_offset(0));
@@ -275,12 +279,87 @@ int alloc_page(void *src, backing *file)
 }
 
 /*
-  clear the page referred to by `index`, and add it to the freelist,
-  if the page exists.
+  add the page referred to by `index` to the freelist, if the page exists.
   returns 0 if successful, -1 in error.
  */
 int free_page(backing *file, int index)
 {
+  int pageloc = index_to_offset(index);
+  if (pageloc == 0) {
+    // the metadata page is special. it cannot be freed.
+    return -1;
+  }
+  if (file == NULL) {
+    // no backing to read from!
+    return -1;
+  }
+
+  // read in the metadata.
+  meta_page *metadata = calloc(1, PAGESIZE);
+  int read = pread(file->storefd, metadata, PAGESIZE, index_to_offset(0));
+  if (read != PAGESIZE) {
+    return -1;
+  }
+
+  // if there are no free pages, this becomes the first and last.
+  if (metadata->freelist_tail.offset == -1 && metadata->freelist_head.offset == -1) {
+    metadata->freelist_head.offset = pageloc;
+    metadata->freelist_tail.offset = pageloc;
+
+    freepage *new = calloc(1, PAGESIZE);
+    new->offset = -1;
+
+    int free_write = pwrite(file->storefd, new, PAGESIZE, pageloc);
+    if (free_write != PAGESIZE) {
+      free(metadata);
+      free(new);
+      return -1;
+    }
+    int meta_write = pwrite(file->storefd, metadata, PAGESIZE, index_to_offset(0));
+    if (meta_write != PAGESIZE) {
+      free(metadata);
+      free(new);
+      return -1;
+    }
+    free(new);
+  }
+
+  // free list is not empty, append to the tail.
+
+  freepage *old = calloc(1, PAGESIZE);
+  old->offset = pageloc;
+
+  int old_tail = pwrite(file->storefd, old, PAGESIZE, metadata->freelist_tail.offset);
+  if (old_tail != PAGESIZE) {
+    free(metadata);
+    free(old);
+    return -1;
+  }
+  
+  freepage *new = calloc(1, PAGESIZE);
+  new->offset = -1;
+
+  int free_write = pwrite(file->storefd, new, PAGESIZE, pageloc);
+  if (free_write != PAGESIZE) {
+    free(metadata);
+    free(old);
+    free(new);
+    return -1;
+  }
+
+  // set the new tail
+  metadata->freelist_tail.offset = pageloc;
+  int meta_write = pwrite(file->storefd, metadata, PAGESIZE, index_to_offset(0));
+  if (meta_write != PAGESIZE) {
+    free(metadata);
+    free(old);
+    free(new);
+    return -1;
+  }
+  
+  free(metadata);
+  free(old);
+  free(new);
   return 0;
 }
 /*

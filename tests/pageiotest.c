@@ -38,27 +38,41 @@ int main(int argc, char *argv[]){
 
   // testing paging.
 
-  void *src = calloc(1, PAGESIZE);
-  memset(src, 65, PAGESIZE);
+  void *first_src = calloc(1, PAGESIZE);
+  memset(first_src, 65, PAGESIZE);
   
-  //void *dest = calloc(1, PAGESIZE);
 
-  if (put_page(src, file, 0) != 0) {
+  int first = alloc_page(first_src, file);
+  if (first == -1) {
     printf("\ncould not get page!\n");
     return -1;
   }
+  printf("page id allocated and written: %i\n", first);
 
+  void *first_dest = calloc(1, PAGESIZE);
+  printf("getting page\n");
+  if (get_page(first_dest, file, 1) != 0) {
+    printf("error getting page\n");
+    return -1;
+  }
+  for (int i = 0; i < PAGESIZE; i++) {
+    if (((char *)first_src)[i] != ((char *)first_dest)[i]) {
+      printf("pages do not match!\n");
+      return -1;
+    }
+  }
+  
   printf("\n closing filestore...\n");
   close_backing(file);
   file = NULL;
 
-  if (remove_backing("testfilename") == 0) {
+  /* if (remove_backing("teststore") == 0) {
     printf("files removed!\n");
   }
   else {
     printf("files could not be removed.!");
     return -1;
-  }
+    }*/
   
   
   return 0;
