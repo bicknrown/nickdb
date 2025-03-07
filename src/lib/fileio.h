@@ -32,5 +32,6 @@ int offset_to_index(int offset);
 
 // pages
 int alloc_page(void *src, backing *file);
+int free_page(backing *file, int index);
 int get_page(void *dest, backing *file, int index);
 int put_page(void *src, backing *file, int index);

@@ -275,6 +275,15 @@ int alloc_page(void *src, backing *file)
 }
 
 /*
+  clear the page referred to by `index`, and add it to the freelist,
+  if the page exists.
+  returns 0 if successful, -1 in error.
+ */
+int free_page(backing *file, int index)
+{
+  return 0;
+}
+/*
   find the page, located at `index` in `file`, if it exists, and copy the
   data to `dest`.
   It is assumed that the `dest` pointer can hold at least
