@@ -224,8 +224,14 @@ int alloc_page(void *src, backing *file)
       free(nextpage);
       return -1;
     }
-    
-    metadata->freelist_head.offset = nextpage->offset;
+
+    if (metadata->freelist_head.offset == metadata->freelist_tail.offset) {
+      metadata->freelist_head.offset = nextpage->offset;
+      metadata->freelist_tail.offset = nextpage->offset;
+    }
+    else {
+      metadata->freelist_head.offset = nextpage->offset;
+    }
 
     int write = pwrite(file->storefd, src, PAGESIZE, offset);
     if (write != PAGESIZE) {
