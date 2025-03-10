@@ -18,10 +18,4 @@
 
  */
 
-#include <stdlib.h>
-#include <string.h>
-#include <uuid/uuid.h>
-
-#include "datastructures.h"
-
-// idk yet. TODO
+#define PAGESIZE 4096
