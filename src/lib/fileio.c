@@ -28,15 +28,7 @@
 #include <uuid/uuid.h>
 
 #include "./fileio.h"
-
-#define STOREEXTLEN 6
-#define METAEXTLEN 5
-#define NULLLEN 1
-
-#define PAGESIZE 4096
-
-#define METAEXT ".meta"
-#define STOREEXT ".store"
+#include "./constants.h"
 
 /*
   close the files associated with the backing store, and free the structure.

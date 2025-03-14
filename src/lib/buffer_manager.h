@@ -17,6 +17,36 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
  */
+#include "constants.h"
+
+/*
+  Each frame in a buffer manager should be a whole PAGESIZE bytes,
+  this structure lets us work with that easier, using an array of pointers
+  to this type to allow for dynamic allocation of frames for pages.
+ */
+typedef struct frame {
+  char framedata[PAGESIZE];
+} frame;
+
+/*
+  Each buffer manager will have it's own state stored inside a struct that looks
+  like the following. this structure is allocated and returned by buff_create()
+  and freed by buff_destroy()
+ */
+typedef struct buffer_manager {
+  int frames;
+  frame **buffer;
+
+  frame **freelist;
+  
+} buffer_manager;
+
+buffer_manager *buff_create(char *name, int frames);
+void *buff_pin(buffer_manager *man, int page_index);
+int buff_unpin(buffer_manager *man);
+int buff_mark_page(buffer_manager *man, void *frame);
+int buff_flush_all(buffer_manager *man);
+int buff_destroy(buffer_manager *man);
 
 
 /*
@@ -72,10 +102,4 @@
   
   }
   
-  buffer_manager *buff_init(char *name, int frames);
-  void *buff_pin(buffer_manager *man, int page_index);
-  int buff_unpin(buffer_manager *man, void *frame);
-  int buff_mark_page(buffer_manager *man, void *frame);
-  int buff_flush_all(buffer_manager *man);
-  int buff_destroy(buffer_manager *man);
  */

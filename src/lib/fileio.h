@@ -18,7 +18,44 @@
 
  */
 
-#include "./datastructures.h"
+#define STOREEXTLEN 6
+#define METAEXTLEN 5
+#define NULLLEN 1
+
+#define METAEXT ".meta"
+#define STOREEXT ".store"
+
+typedef struct backing {
+  int metafd;
+  int storefd;
+} backing;
+
+/*
+  this structure lives in both the metadata page, and each free page.
+  the offset corresponds to the next free page.
+  if the offset is -1, there are no more free pages.
+*/
+typedef struct freepage {
+  int offset; // replace with index, then do calc.
+} freepage;
+
+/*
+  .this structure defines the layout for the first page of
+  the storage backing.
+*/
+typedef struct meta_page {
+  // the current size of the backing, in pages.
+  int size;
+  /*
+    note for future nick:
+    we don't need a tail if we just treat the "free list" like a stack.
+    less stuff to go wrong when you are just pushing and popping.
+    in any case, what i have here does work, so just food for thought.
+   */
+  freepage freelist_head;
+  freepage freelist_tail;
+
+} meta_page;
 
 // backing
 backing *create_new_backing(char *name);
@@ -35,3 +72,5 @@ int alloc_page(void *src, backing *file);
 int free_page(backing *file, int index);
 int get_page(void *dest, backing *file, int index);
 int put_page(void *src, backing *file, int index);
+
+
