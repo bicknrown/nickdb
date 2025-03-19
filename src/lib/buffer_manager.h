@@ -23,14 +23,20 @@
   something
  */
 
+typedef enum frame_state {
+  FS_PINNED,
+  FS_UNPINNED,
+  FS_PINNED_DIRTY,
+  FS_UNPINNED_DIRTY,
+} frame_state;
+
 typedef char frame[PAGESIZE];
 
 typedef struct meta_frame {
-  int pinned; // 1 = pinned
+  frame_state state; // 1 = pinned
   int page_id;
-  int free; // 1 = free
-  // if free, this next pointer is now useful.
-  meta_frame *next_free;
+  // if free or dirty, this next pointer is now useful.
+  meta_frame *next_free_or_dirty;
 } meta_frame;
 
 /*
@@ -50,7 +56,14 @@ typedef struct buffer_manager {
 
   // a linked list of `meta_frame`s which point to the next free frame, if any.
   // if the page is free, and the next is NULL, there are no more free frames.
+  // this list must contain every frame in the state `FS_UNPINNED`.
+  // NULL on initialization.
   meta_frame *freelist;
+
+  // unpinned dirty pages to write back to disk.
+  // this list must contain every frame in the state `FS_UNPINNED_DIRTY`.
+  // NULL on initialization.
+  meta_frame *writeback;
   
 } buffer_manager;
 
