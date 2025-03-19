@@ -20,13 +20,18 @@
 #include "constants.h"
 
 /*
-  Each frame in a buffer manager should be a whole PAGESIZE bytes,
-  this structure lets us work with that easier, using an array of pointers
-  to this type to allow for dynamic allocation of frames for pages.
+  something
  */
-typedef struct frame {
-  char framedata[PAGESIZE];
-} frame;
+
+typedef char frame[PAGESIZE];
+
+typedef struct meta_frame {
+  int pinned; // 1 = pinned
+  int page_id;
+  int free; // 1 = free
+  // if free, this next pointer is now useful.
+  meta_frame *next_free;
+} meta_frame;
 
 /*
   Each buffer manager will have it's own state stored inside a struct that looks
@@ -35,15 +40,23 @@ typedef struct frame {
  */
 typedef struct buffer_manager {
   int frames;
-  frame **buffer;
+  // a contagious region which is `frames * PAGESIZE` bytes large,
+  // can be treated like an array of frames.
+  frame *buffer;
 
-  frame **freelist;
+  // also a contiguous region, with a one to one mapping to the buffer array.
+  // can be treated like an array of `meta_frame`s.
+  meta_frame *metaframes;
+
+  // a linked list of `meta_frame`s which point to the next free frame, if any.
+  // if the page is free, and the next is NULL, there are no more free frames.
+  meta_frame *freelist;
   
 } buffer_manager;
 
 buffer_manager *buff_create(char *name, int frames);
 void *buff_pin(buffer_manager *man, int page_index);
-int buff_unpin(buffer_manager *man);
+int buff_unpin(buffer_manager *man, void *frame);
 int buff_mark_page(buffer_manager *man, void *frame);
 int buff_flush_all(buffer_manager *man);
 int buff_destroy(buffer_manager *man);
