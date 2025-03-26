@@ -18,5 +18,43 @@
 
  */
 
+#include "string.h"
+
 #include "./buffer_manager.h"
 #include "./fileio.h"
+
+buffer_manager *buff_create(char *name, int frames)
+{
+  //
+  return NULL;
+}
+
+void *buff_pin(buffer_manager *man, int page_index)
+{
+  //
+  return NULL;
+}
+
+int buff_unpin(buffer_manager *man, void *frame)
+{
+  //
+  return -1;
+}
+
+int buff_mark_page(buffer_manager *man, void *frame)
+{
+  //
+  return -1;
+}
+
+int buff_flush_all(buffer_manager *man)
+{
+  //
+  return -1;
+}
+
+int buff_destroy(buffer_manager *man)
+{
+  //
+  return -1;
+}

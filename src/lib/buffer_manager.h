@@ -36,7 +36,7 @@ typedef struct meta_frame {
   frame_state state; // 1 = pinned
   int page_id;
   // if free or dirty, this next pointer is now useful.
-  meta_frame *next_free_or_dirty;
+  struct meta_frame *next_free_or_dirty;
 } meta_frame;
 
 /*
