@@ -18,6 +18,7 @@
 
  */
 #include "constants.h"
+#include "fileio.h"
 
 /*
   something
@@ -45,6 +46,7 @@ typedef struct meta_frame {
   and freed by buff_destroy()
  */
 typedef struct buffer_manager {
+  backing *backing;
   int frames;
   // a contagious region which is `frames * PAGESIZE` bytes large,
   // can be treated like an array of frames.
@@ -67,7 +69,7 @@ typedef struct buffer_manager {
   
 } buffer_manager;
 
-buffer_manager *buff_create(char *name, int frames);
+buffer_manager *buff_create(char *storename, int frames);
 void *buff_pin(buffer_manager *man, int page_index);
 int buff_unpin(buffer_manager *man, void *frame);
 int buff_mark_page(buffer_manager *man, void *frame);

@@ -18,15 +18,46 @@
 
  */
 
+#include "stdlib.h"
 #include "string.h"
 
 #include "./buffer_manager.h"
-#include "./fileio.h"
 
-buffer_manager *buff_create(char *name, int frames)
+/*
+  create an area in memory of size `frames` multiplied by PAGESIZE
+  to work with data coming to and from disk.
+  each manager is tied to its backing store, named by `storename`
+
+  returns NULL in error.
+  
+ */
+buffer_manager *buff_create(char *storename, int frames)
 {
-  //
-  return NULL;
+  backing *store = open_backing(storename);
+  if (store == NULL){
+    return NULL; 
+  }
+
+  // the meta structure itself.
+  buffer_manager *manager = calloc(1, sizeof(buffer_manager));
+  // initial metadata
+  manager->backing = store;
+  manager->frames = frames;
+  // the pointer for the actual buffer
+  manager->buffer = calloc(frames, sizeof(frame));
+  // the metadata frame buffer
+  manager->metaframes = calloc(frames, sizeof(meta_frame));
+  // the free list of frame starts with the the first frame.
+  manager->freelist = manager->metaframes;
+  // (all the frames are free!)
+  for (int i=1; i < frames; i++){
+    // the first pointer is already set, so we can skip it by starting at 1.
+    manager->metaframes[i].next_free_or_dirty = &manager->metaframes[i + 1];
+  }
+  // the writeback queue is empty to start.
+  manager->writeback = NULL;
+  
+  return manager;
 }
 
 void *buff_pin(buffer_manager *man, int page_index)
