@@ -50,11 +50,16 @@ buffer_manager *buff_create(char *storename, int frames)
   // the free list of frame starts with the the first frame.
   manager->freelist = manager->metaframes;
   // (all the frames are free!)
-  for (int i=1; i < frames; i++){
-    // the first pointer is already set, so we can skip it by starting at 1.
-    manager->metaframes[i].next_free_or_dirty = &manager->metaframes[i + 1];
+  for (int i=0; i < frames; i++){
+    // this should not walk of the end...
+    if (i < frames - 1 ){
+      manager->metaframes[i].next_free_or_dirty = &manager->metaframes[i + 1];      
+    }
+    else {
+      manager->metaframes[i].next_free_or_dirty = NULL; 
+    }
   }
-  // the writeback queue is empty to start.
+  // the write-back queue is empty to start.
   manager->writeback = NULL;
   
   return manager;
