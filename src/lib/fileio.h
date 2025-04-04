@@ -64,13 +64,13 @@ void close_backing(backing *files);
 int remove_backing(char *filename);
 
 // page helpers
-int index_to_offset(int index);
+int index_to_offset(int page_index);
 int offset_to_index(int offset);
 
 // pages
 int alloc_page(void *src, backing *file);
-int free_page(backing *file, int index);
-int get_page(void *dest, backing *file, int index);
-int put_page(void *src, backing *file, int index);
+int free_page(backing *file, int page_index);
+int get_page(void *dest, backing *file, int page_index);
+int put_page(void *src, backing *file, int page_index);
 
 

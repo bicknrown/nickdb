@@ -34,8 +34,8 @@ typedef enum frame_state {
 typedef char frame[PAGESIZE];
 
 typedef struct meta_frame {
-  frame_state state; // 1 = pinned
-  int page_id;
+  frame_state state;
+  int page_index;
   // if free or dirty, this next pointer is now useful.
   struct meta_frame *next_free_or_dirty;
 } meta_frame;
@@ -59,7 +59,6 @@ typedef struct buffer_manager {
   // a linked list of `meta_frame`s which point to the next free frame, if any.
   // if the page is free, and the next is NULL, there are no more free frames.
   // this list must contain every frame in the state `FS_UNPINNED`.
-  // NULL on initialization.
   meta_frame *freelist;
 
   // unpinned dirty pages to write back to disk.
@@ -69,65 +68,13 @@ typedef struct buffer_manager {
   
 } buffer_manager;
 
+// helpers
+inline int get_frame_index(buffer_manager *man, meta_frame *meta);
+
+// buffer manager
 buffer_manager *buff_create(char *storename, int frames);
+int buff_destroy(buffer_manager *man);
 void *buff_pin(buffer_manager *man, int page_index);
 int buff_unpin(buffer_manager *man, void *frame);
 int buff_mark_page(buffer_manager *man, void *frame);
 int buff_flush_all(buffer_manager *man);
-int buff_destroy(buffer_manager *man);
-
-
-/*
-  enum of page types:
-  each page has a header, which is the page type.
-  the page header is 4 bytes.
-  - metadata (magic byte)
-  - freepage
-
-  struct page type {
-    // 4 byte int.
-  }
- */
-/*
-  remove allocations with stack arrays?
-  clear with bzero(3)
- */
-
-/*
-  within a give page, one abstraction above.
-  a structure to handle reserved space size, and record size:
-  something like
-
-  struct page_spec {
-    4 byte int record_size;
-    "" number_of_records_used;
-    "" reserved_bytes
-  }
-  struct page_spec { // page specification
-    int reserved_size; // 4 bytes
-    int record_size;
-  }
-  void *fixed_get(void *page, int record_index);
- */
-
-/*
-  void *variable
- */
-/*
-  nevermind, buffermanager
-
-  typedef frame 
-  
-  struct meta_frame {
-  
-  }
-  
-  struct buffer_manager {
-    int frames;
-    frame *start; // start of frame memory
-
-    meta_frame *start // metadata for frames.
-  
-  }
-  
- */

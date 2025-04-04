@@ -177,10 +177,10 @@ int remove_backing(char *name)
   given a page number, this function will return the offset
   in the backing to where the page starts.
  */
-int index_to_offset(int index)
+int index_to_offset(int page_index)
 {
   // 0 indexed. works out nicely.
-  return (index * PAGESIZE);
+  return (page_index * PAGESIZE);
 }
 
 int offset_to_index(int offset)
@@ -366,9 +366,9 @@ int free_page(backing *file, int index)
   It is assumed that the `dest` pointer can hold at least
   PAGESIZE bytes.
  */
-int get_page(void *dest, backing *file, int index)
+int get_page(void *dest, backing *file, int page_index)
 {
-  int pageloc = index_to_offset(index);
+  int pageloc = index_to_offset(page_index);
   if (pageloc == 0) {
     // the metadata page is special. no direct reads.
     return -1;
@@ -391,11 +391,11 @@ int get_page(void *dest, backing *file, int index)
 }
 /*
   given that the page exists, copy the full PAGESIZE from `src`
-  to the page specified by `index`
+  to the page specified by `page_index`
  */
-int put_page(void *src, backing *file, int index)
+int put_page(void *src, backing *file, int page_index)
 {
-  int pageloc = index_to_offset(index);
+  int pageloc = index_to_offset(page_index);
   if (pageloc == 0) {
     // the metadata page is special. no direct reads.
     return -1;
@@ -405,7 +405,7 @@ int put_page(void *src, backing *file, int index)
     return -1;
   }
   if (lseek(file->storefd, pageloc, SEEK_SET) == -1) {
-    fprintf(stderr,"page %i not found\n", index);
+    fprintf(stderr,"page %i not found\n", page_index);
     return -1;
   }
   // attempt to read the page.
@@ -418,8 +418,3 @@ int put_page(void *src, backing *file, int index)
   
   return 0;
 }
-
-
-// allocate_page( ) using the next available index.
-// free_page() overwrite page with special information, linking to the next free page. 
-// fsync queue, based on number of entries or time.
