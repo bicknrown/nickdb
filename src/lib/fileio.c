@@ -193,15 +193,18 @@ int offset_to_index(int offset)
 
 int alloc_page(void *src, backing *file)
 {
+  int failure = STATUS_ERR;
   if (file == NULL) {
     // no backing to read from!
-    return -1;
+    failure = STATUS_NO_FILE;
+    goto fail_zero;
   }
   // read in the metadata.
   meta_page *metadata = calloc(1, PAGESIZE);
   int read = pread(file->storefd, metadata, PAGESIZE, index_to_offset(0));
   if (read != PAGESIZE) {
-    return -1;
+    failure = STATUS_BAD_READ;
+    goto fail_zero;
   }
   
   // if there are pages on the freelist, use one.
@@ -212,9 +215,8 @@ int alloc_page(void *src, backing *file)
 
     int read = pread(file->storefd, nextpage, sizeof(freepage), offset);
     if (read != sizeof(freepage)) {
-      free(metadata);
-      free(nextpage);
-      return -1;
+      failure = STATUS_BAD_READ;
+      goto fail_zero;
     }
 
     if (metadata->freelist_head.offset == metadata->freelist_tail.offset) {
@@ -227,20 +229,23 @@ int alloc_page(void *src, backing *file)
 
     int write = pwrite(file->storefd, src, PAGESIZE, offset);
     if (write != PAGESIZE) {
-      free(metadata);
-      free(nextpage);
-      return -1;
+      failure = STATUS_BAD_WRITE;
+      goto fail_zero;
     }
 
     int meta_write = pwrite(file->storefd, metadata, PAGESIZE, index_to_offset(0));
     if (meta_write != PAGESIZE) {
-      free(metadata);
-      free(nextpage);
-      return -1;
+      failure = STATUS_BAD_WRITE;
+      goto fail_zero;
     }
     free(metadata);
     free(nextpage);
     return returnindex;
+
+  fail_zero:
+    free(metadata);
+    free(nextpage);
+    return failure;
   }
 
   // if there are no free pages, make a new one.
@@ -250,30 +255,32 @@ int alloc_page(void *src, backing *file)
   void *blank_page = calloc(1, PAGESIZE);
   int blank_write = pwrite(file->storefd, blank_page, PAGESIZE, index_to_offset(newpage));
   if (blank_write != PAGESIZE) {
-    free(metadata);
-    free(blank_page);
-    return -1;
+    failure = STATUS_BAD_WRITE;
+    goto fail_one;
   }
 
   int data_write = pwrite(file->storefd, src, PAGESIZE, index_to_offset(newpage));
   if (data_write != PAGESIZE) {
-    free(metadata);
-    free(blank_page);
-    return -1;
+    failure = STATUS_BAD_WRITE;
+    goto fail_one;
   }
 
   metadata->size = metadata->size + 1; // size is now 1KB larger.
 
   int meta_write = pwrite(file->storefd, metadata, PAGESIZE, index_to_offset(0));
   if (meta_write != PAGESIZE) {
-    free(metadata);
-    free(blank_page);
-    return -1;
+    failure = STATUS_BAD_WRITE;
+    goto fail_one;
   }
   
   free(metadata);
   free(blank_page);
   return newpage;
+
+ fail_one:
+  free(metadata);
+  free(blank_page);
+  return failure;
 }
 
 /*
@@ -382,7 +389,7 @@ int get_page(void *dest, backing *file, int page_index)
     return -1;
   }
   // attempt to read the page.
-  if (read(file->storefd, dest, PAGESIZE) != PAGESIZE) {
+  if (pread(file->storefd, dest, PAGESIZE, index_to_offset(page_index)) != PAGESIZE) {
     // read failed!
     return -1;
   }
@@ -409,7 +416,7 @@ int put_page(void *src, backing *file, int page_index)
     return -1;
   }
   // attempt to read the page.
-  int bytes = write(file->storefd, src, PAGESIZE);
+  int bytes = pwrite(file->storefd, src, PAGESIZE, index_to_offset(page_index));
   if (bytes != PAGESIZE) {
     fprintf(stderr,"write() failed!, %i bytes written.\n errno: %i\npageoffset: %i\n", bytes, errno, pageloc);
     perror("error: ");

@@ -19,3 +19,12 @@
  */
 
 #define PAGESIZE 4096
+
+typedef enum return_state {
+  STATUS_OK = 0,
+  STATUS_ERR,
+  
+  STATUS_NO_FILE,
+  STATUS_BAD_READ,
+  STATUS_BAD_WRITE,
+} return_state;
