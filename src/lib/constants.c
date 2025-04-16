@@ -1,0 +1,49 @@
+/*
+   Copyright 2025 Nick Brown <njbrown4@buffalo.edu>
+
+   This file is part of nickdb.
+
+   nickdb is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   nickdb is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+ */
+
+#include "constants.h"
+
+const char * const status_str[] = {
+  [STATUS_OK] = "STATUS_OK",
+  [STATUS_ERR] = "STATUS_ERR",
+
+  [STATUS_NO_BACKING] = "STATUS_NO_BACKING",
+  [STATUS_NO_FILE] = "STATUS_NO_FILE",
+  [STATUS_BAD_FILE] = "STATUS_BAD_FILE",
+  [STATUS_BAD_OPEN] = "STATUS_BAD_OPEN",
+  [STATUS_BAD_CLOSE] = "STATUS_BAD_CLOSE",
+  [STATUS_BAD_REMOVE] = "STATUS_BAD_REMOVE",
+  
+  [STATUS_BAD_READ] = "STATUS_BAD_READ",
+  [STATUS_BAD_WRITE] = "STATUS_BAD_WRITE",
+  [STATUS_BAD_SEEK] = "STATUS_BAD_WRITE",
+
+  [STATUS_META_PAGE] = "STATUS_META_PAGE",
+
+  [STATUS_TEST_RESET] = "STATUS_TEST_RESET",
+  [STATUS_TEST_ERR] = "STATUS_TEST_ERR",
+};
+
+// please please please, make sure i don't miss any.
+
+#define ASSERT_ENUM_TO_STR(sarray, max)					\
+  typedef char assert_sizeof_##max[(sizeof(sarray)/sizeof(sarray[0]) == (max)) ? 1 : -1]
+
+ASSERT_ENUM_TO_STR(status_str, STATUS_MAX);

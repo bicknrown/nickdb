@@ -31,7 +31,7 @@ LIBDIR := src/lib/
 SOURCES := $(SRCDIR)nickdb.c
 OBJS := $(patsubst %.c,%.o,$(SOURCES))
 
-LIBS := $(LIBDIR)fileio.c $(LIBDIR)buffer_manager.c 
+LIBS := $(LIBDIR)constants.c $(LIBDIR)fileio.c $(LIBDIR)buffer_manager.c 
 LIBOBJS := $(patsubst %.c,%.o,$(LIBS))
 
 

@@ -23,6 +23,10 @@
 #define STOREEXTLEN 6
 #define NULLLEN 1
 
+#define ERR_SET -1
+
+#define EMPTY_LIST -1
+
 #define STOREEXT ".store"
 
 /*
@@ -54,32 +58,4 @@ typedef enum status {
   STATUS_MAX,
 } status;
 
-/*
-const char * const status_str[] = {
-  [STATUS_OK] = "STATUS_OK",
-  [STATUS_ERR] = "STATUS_ERR",
-
-  [STATUS_NO_BACKING] = "STATUS_NO_BACKING",
-  [STATUS_NO_FILE] = "STATUS_NO_FILE",
-  [STATUS_BAD_FILE] = "STATUS_BAD_FILE",
-  [STATUS_BAD_OPEN] = "STATUS_BAD_OPEN",
-  [STATUS_BAD_CLOSE] = "STATUS_BAD_CLOSE",
-  [STATUS_BAD_REMOVE] = "STATUS_BAD_REMOVE",
-  
-  [STATUS_BAD_READ] = "STATUS_BAD_READ",
-  [STATUS_BAD_WRITE] = "STATUS_BAD_WRITE",
-  [STATUS_BAD_SEEK] = "STATUS_BAD_WRITE",
-
-  [STATUS_META_PAGE] = "STATUS_META_PAGE",
-
-  [STATUS_TEST_RESET] = "STATUS_TEST_RESET",
-  [STATUS_TEST_ERR] = "STATUS_TEST_ERR",
-};
-
-// please please please, make sure i don't miss any.
-
-  #define ASSERT_ENUM_TO_STR(sarray, max)				\
-  typedef char assert_sizeof_##max[(sizeof(sarray)/sizeof(sarray[0]) == (max)) ? 1 : -1]
-
-  ASSERT_ENUM_TO_STR(status_str, STATUS_MAX);
-*/
+extern const char * const status_str[];
