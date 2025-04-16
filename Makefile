@@ -21,14 +21,17 @@ CC := gcc
 
 CFLAGS := -O -g -Wall -Werror -std=c99 -D_DEFAULT_SOURCE -D_GNU_SOURCE
 
-LDFLAGS := -luuid
+LDFLAGS :=
 
 TESTS := fileiotest pageiotest
 
-SOURCES := src/nickdb.c
+SRCDIR := src/
+LIBDIR := src/lib/
+
+SOURCES := $(SRCDIR)nickdb.c
 OBJS := $(patsubst %.c,%.o,$(SOURCES))
 
-LIBS := src/lib/fileio.c
+LIBS := $(LIBDIR)fileio.c $(LIBDIR)buffer_manager.c 
 LIBOBJS := $(patsubst %.c,%.o,$(LIBS))
 
 

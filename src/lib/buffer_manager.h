@@ -17,12 +17,7 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
  */
-#include "constants.h"
 #include "fileio.h"
-
-/*
-  something
- */
 
 typedef enum frame_state {
   FS_PINNED,
@@ -69,7 +64,7 @@ typedef struct buffer_manager {
 } buffer_manager;
 
 // helpers
-inline int get_frame_index(buffer_manager *man, meta_frame *meta);
+int get_frame_index(buffer_manager *man, meta_frame *meta);
 
 // buffer manager
 buffer_manager *buff_create(char *storename, int frames);

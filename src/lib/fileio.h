@@ -17,16 +17,12 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
  */
+#include <stdio.h>
+#include <stdint.h>
 
-#define STOREEXTLEN 6
-#define METAEXTLEN 5
-#define NULLLEN 1
-
-#define METAEXT ".meta"
-#define STOREEXT ".store"
+#include "constants.h"
 
 typedef struct backing {
-  int metafd;
   int storefd;
 } backing;
 
@@ -36,7 +32,7 @@ typedef struct backing {
   if the offset is -1, there are no more free pages.
 */
 typedef struct freepage {
-  int offset; // replace with index, then do calc.
+  ssize_t offset; // replace with index, then do calc.
 } freepage;
 
 /*
@@ -45,7 +41,7 @@ typedef struct freepage {
 */
 typedef struct meta_page {
   // the current size of the backing, in pages.
-  int size;
+  ssize_t size;
   /*
     note for future nick:
     we don't need a tail if we just treat the "free list" like a stack.
@@ -58,19 +54,19 @@ typedef struct meta_page {
 } meta_page;
 
 // backing
-backing *create_new_backing(char *name);
-backing *open_backing(char *name);
-void close_backing(backing *files);
-int remove_backing(char *filename);
+status create_new_backing(char *name, backing **dest);
+status open_backing(char *name, backing **dest);
+status close_backing(backing *file);
+status remove_backing(char *filename);
 
 // page helpers
-int index_to_offset(int page_index);
-int offset_to_index(int offset);
+ssize_t index_to_offset(ssize_t page_index);
+ssize_t offset_to_index(ssize_t offset);
 
 // pages
-int alloc_page(void *src, backing *file);
-int free_page(backing *file, int page_index);
-int get_page(void *dest, backing *file, int page_index);
-int put_page(void *src, backing *file, int page_index);
+status alloc_page(void *src, ssize_t **dest, backing *file);
+status free_page(backing *file, ssize_t page_index);
+status get_page(void **dest, backing *file, ssize_t page_index);
+status put_page(void *src, backing *file, ssize_t page_index);
 
 

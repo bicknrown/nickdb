@@ -18,122 +18,117 @@
 
  */
 
-#include <errno.h>
 #include <fcntl.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/types.h>
 #include <unistd.h>
-#include <uuid/uuid.h>
 
 #include "./fileio.h"
-#include "./constants.h"
-
-/*
-  close the files associated with the backing store, and free the structure.
-  if the structure doesn't exist, why are you trying to close it?
- */
-void close_backing(backing* files)
-{
-  if (files != NULL){
-    close(files->storefd);
-    close(files->metafd);
-    free(files);
-    files = NULL;
-  }
-}
 
 /*
   Creates new pair of metadata files and store files, and returns a structure with
   their file descriptors. the files will be empty. (THIS WILL OVERWRITE OLD STORES)
-  Returns NULL on error.
+  check return status on error.
   The new backing will be opened by it's creation.
  */
-backing *create_new_backing(char *name)
+status create_new_backing(char *name, backing **dest)
 {
-  int namelen = strlen(name);
-  char metafilename[namelen+METAEXTLEN+NULLLEN];
+  status return_status = STATUS_OK;
+  uint64_t namelen = strlen(name);
   char storefilename[namelen+STOREEXTLEN+NULLLEN];
+  meta_page *metadata = NULL;
   
   // build the filenames.
-  memcpy(&metafilename, name, namelen);
   memcpy(&storefilename, name, namelen);
-  
-  memcpy(&metafilename[namelen], METAEXT, METAEXTLEN);
   memcpy(&storefilename[namelen], STOREEXT, STOREEXTLEN);
-
+  
   // finish the file string.
-  memset(&metafilename[namelen + METAEXTLEN], '\0', NULLLEN);
   memset(&storefilename[namelen + STOREEXTLEN], '\0', NULLLEN);
 
-  // allocate the backing to return
-  backing *file = calloc(1, sizeof(backing));
-
   // open the files
-  file->metafd = open(metafilename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
-  file->storefd = open(storefilename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
+  (*dest)->storefd = open(storefilename, O_CREAT | O_TRUNC | O_RDWR, S_IRWXU);
 
-  // if either open fails, close the files, just in case, release the memory and return NULL
-  if (file->metafd == -1 || file->storefd == -1) {
-    close_backing(file);
-    return NULL;
+  // if open fails, close the file, just in case, release the memory and return an error
+  if ((*dest)->storefd == -1) {
+    close_backing((*dest));
+
+    return_status = STATUS_BAD_FILE;
+    *dest = NULL;
+    goto cleanup;
   }
 
   // initialize metadata page 0.
   // blank the page, write the values into the struct, then write it to their
   // storage backing.
-  meta_page *metadata = calloc(1, PAGESIZE);
+  metadata = calloc(1, PAGESIZE);
   metadata->size = 1; // there is only the metadata page.
   metadata->freelist_head.offset = -1; // no free pages to start.
   metadata->freelist_tail.offset = -1; // no free pages to start.
   
-  int written = pwrite(file->storefd, metadata, PAGESIZE, index_to_offset(0));
-  free(metadata);
-  metadata = NULL;
+  ssize_t written = pwrite((*dest)->storefd, metadata, PAGESIZE, index_to_offset(0));
   if (written != PAGESIZE){
-    close_backing(file);
-    return NULL;
+    close_backing((*dest));
+
+    return_status = STATUS_BAD_WRITE;
+    *dest = NULL;
+    goto cleanup;
   }
-  
-  return file;
+
+  goto cleanup;
+ cleanup:
+  free(metadata);
+  return return_status;
 }
 
 /*
   Open the store provided by the name, if it does not exist, NULL will
   be returned.
  */
-backing *open_backing(char *name)
+status open_backing(char *name, backing **dest)
 {
-  int namelen = strlen(name);
-  char metafilename[namelen+METAEXTLEN+NULLLEN];
+  uint64_t namelen = strlen(name);
   char storefilename[namelen+STOREEXTLEN+NULLLEN];
   
   // build the filenames.
-  memcpy(&metafilename, name, namelen);
   memcpy(&storefilename, name, namelen);
   
-  memcpy(&metafilename[namelen], METAEXT, METAEXTLEN);
   memcpy(&storefilename[namelen], STOREEXT, STOREEXTLEN);
 
   // finish the file string.
-  memset(&metafilename[namelen + METAEXTLEN], '\0', NULLLEN);
   memset(&storefilename[namelen + STOREEXTLEN], '\0', NULLLEN);
 
-  // allocate the backing to return
-  backing *files = calloc(1, sizeof(backing));
-
   // open the files
-  files->metafd = open(metafilename, O_RDWR);
-  files->storefd = open(storefilename, O_RDWR);
+  (*dest)->storefd = open(storefilename, O_RDWR);
 
   // if either open fails,  close the files, just in case, release the memory, and return NULL
-  if (files->metafd == -1 || files->storefd == -1) {
-    close_backing(files);
-    return NULL;
+  if ((*dest)->storefd == -1) {
+    close_backing((*dest));
+
+    *dest = NULL;
+    return STATUS_BAD_OPEN;
   }
   
-  return files;
+  return STATUS_OK;
+}
+
+/*
+  close the files associated with the backing store. for errors, report it.
+ */
+status close_backing(backing* file)
+{
+  if (file != NULL){
+    if(close(file->storefd == STATUS_OK)){
+      return STATUS_OK;
+    }
+    else{
+      return STATUS_BAD_CLOSE;
+    }
+  }
+  else{
+    return STATUS_ERR;
+  }
 }
 
 /*
@@ -143,32 +138,24 @@ backing *open_backing(char *name)
   return 0 if successful, -1 if the file
   requested does not exist.
  */
-int remove_backing(char *name)
+status remove_backing(char *name)
 {
-  int namelen = strlen(name);
-  char metafilename[namelen+METAEXTLEN+NULLLEN];
+  uint64_t namelen = strlen(name);
   char storefilename[namelen+STOREEXTLEN+NULLLEN];
   
   // build the filenames.
-  memcpy(&metafilename, name, namelen);
   memcpy(&storefilename, name, namelen);
-  
-  memcpy(&metafilename[namelen], METAEXT, METAEXTLEN);
   memcpy(&storefilename[namelen], STOREEXT, STOREEXTLEN);
 
   // finish the file string.
-  memset(&metafilename[namelen + METAEXTLEN], '\0', NULLLEN);
   memset(&storefilename[namelen + STOREEXTLEN], '\0', NULLLEN);
 
   // attempt to remove the files.
-  if (remove(metafilename) != 0) {
-    return -1;
-  }
   if (remove(storefilename) != 0) {
-    return -1;
+    return STATUS_BAD_REMOVE;
   }
   
-  return 0;
+  return STATUS_OK;
 }
 
 // page manipulation.
@@ -177,13 +164,13 @@ int remove_backing(char *name)
   given a page number, this function will return the offset
   in the backing to where the page starts.
  */
-int index_to_offset(int page_index)
+ssize_t index_to_offset(ssize_t page_index)
 {
   // 0 indexed. works out nicely.
   return (page_index * PAGESIZE);
 }
 
-int offset_to_index(int offset)
+ssize_t offset_to_index(ssize_t offset)
 {
   if (offset == 0) {
     return 0;
@@ -191,32 +178,38 @@ int offset_to_index(int offset)
   return (offset / PAGESIZE);
 }
 
-int alloc_page(void *src, backing *file)
+status alloc_page(void *src, ssize_t **dest, backing *file)
 {
-  int failure = STATUS_ERR;
+  status return_status = STATUS_OK;
+  meta_page *metadata = NULL;
+  freepage *nextpage = NULL;  
+  void *blank_page = NULL;
+  
   if (file == NULL) {
     // no backing to read from!
-    failure = STATUS_NO_FILE;
-    goto fail_zero;
+    return_status = STATUS_NO_FILE;
+    *dest = NULL;
+    goto cleanup;
   }
   // read in the metadata.
-  meta_page *metadata = calloc(1, PAGESIZE);
+  metadata = calloc(1, PAGESIZE);
   int read = pread(file->storefd, metadata, PAGESIZE, index_to_offset(0));
   if (read != PAGESIZE) {
-    failure = STATUS_BAD_READ;
-    goto fail_zero;
+    return_status = STATUS_BAD_READ;
+    *dest = NULL;    
+    goto cleanup;
   }
-  
+
   // if there are pages on the freelist, use one.
   if (metadata->freelist_head.offset != -1) {
     int offset = metadata->freelist_head.offset;
-    int returnindex = offset_to_index(offset);
-    freepage *nextpage = calloc(1, (sizeof(freepage)));
+    nextpage = calloc(1, (sizeof(freepage)));
 
     int read = pread(file->storefd, nextpage, sizeof(freepage), offset);
     if (read != sizeof(freepage)) {
-      failure = STATUS_BAD_READ;
-      goto fail_zero;
+      return_status = STATUS_BAD_READ;
+      *dest = NULL;      
+      goto cleanup;
     }
 
     if (metadata->freelist_head.offset == metadata->freelist_tail.offset) {
@@ -229,81 +222,90 @@ int alloc_page(void *src, backing *file)
 
     int write = pwrite(file->storefd, src, PAGESIZE, offset);
     if (write != PAGESIZE) {
-      failure = STATUS_BAD_WRITE;
-      goto fail_zero;
+      return_status = STATUS_BAD_WRITE;
+      *dest = NULL;
+      goto cleanup;
     }
 
     int meta_write = pwrite(file->storefd, metadata, PAGESIZE, index_to_offset(0));
     if (meta_write != PAGESIZE) {
-      failure = STATUS_BAD_WRITE;
-      goto fail_zero;
+      return_status = STATUS_BAD_WRITE;
+      *dest = NULL;
+      goto cleanup;
     }
-    free(metadata);
-    free(nextpage);
-    return returnindex;
 
-  fail_zero:
-    free(metadata);
-    free(nextpage);
-    return failure;
+    // set the dest pointer, then go to cleanup
+    **dest = offset_to_index(offset);
+    goto cleanup;
   }
 
   // if there are no free pages, make a new one.
   
   // current size is also the index of the next page to allocate.
   int newpage = metadata->size;
-  void *blank_page = calloc(1, PAGESIZE);
+  blank_page = calloc(1, PAGESIZE);
   int blank_write = pwrite(file->storefd, blank_page, PAGESIZE, index_to_offset(newpage));
   if (blank_write != PAGESIZE) {
-    failure = STATUS_BAD_WRITE;
-    goto fail_one;
+    return_status = STATUS_BAD_WRITE;
+    *dest = NULL;
+    goto cleanup;
   }
 
   int data_write = pwrite(file->storefd, src, PAGESIZE, index_to_offset(newpage));
   if (data_write != PAGESIZE) {
-    failure = STATUS_BAD_WRITE;
-    goto fail_one;
+    return_status = STATUS_BAD_WRITE;
+    *dest = NULL;
+    goto cleanup;
   }
 
   metadata->size = metadata->size + 1; // size is now 1KB larger.
 
   int meta_write = pwrite(file->storefd, metadata, PAGESIZE, index_to_offset(0));
   if (meta_write != PAGESIZE) {
-    failure = STATUS_BAD_WRITE;
-    goto fail_one;
+    return_status = STATUS_BAD_WRITE;
+    *dest = NULL;
+    goto cleanup;
   }
-  
-  free(metadata);
-  free(blank_page);
-  return newpage;
 
- fail_one:
+  **dest = newpage;
+  goto cleanup;
+  
+ cleanup:
   free(metadata);
+  free(nextpage);
   free(blank_page);
-  return failure;
+  return return_status;
 }
 
 /*
   add the page referred to by `index` to the freelist, if the page exists.
-  returns 0 if successful, -1 in error.
+  returns STATUS_OK if successful, check error types for errors.
  */
-int free_page(backing *file, int index)
+status free_page(backing *file, ssize_t page_index)
 {
-  int pageloc = index_to_offset(index);
+  status return_status = STATUS_OK;
+  meta_page *metadata = NULL;
+  freepage *new = NULL;
+  freepage *old = NULL;
+  
+  int pageloc = index_to_offset(page_index);
   if (pageloc == 0) {
     // the metadata page is special. it cannot be freed.
-    return -1;
+    return_status = STATUS_META_PAGE;
+    goto cleanup;
   }
   if (file == NULL) {
     // no backing to read from!
-    return -1;
+    return_status = STATUS_NO_FILE;
+    goto cleanup;
   }
 
   // read in the metadata.
-  meta_page *metadata = calloc(1, PAGESIZE);
+  metadata = calloc(1, PAGESIZE);
   int read = pread(file->storefd, metadata, PAGESIZE, index_to_offset(0));
   if (read != PAGESIZE) {
-    return -1;
+    return_status = STATUS_BAD_READ;
+    goto cleanup;
   }
 
   // if there are no free pages, this becomes the first and last.
@@ -316,56 +318,51 @@ int free_page(backing *file, int index)
 
     int free_write = pwrite(file->storefd, new, PAGESIZE, pageloc);
     if (free_write != PAGESIZE) {
-      free(metadata);
-      free(new);
-      return -1;
+      return_status = STATUS_BAD_WRITE;
+      goto cleanup;
     }
     int meta_write = pwrite(file->storefd, metadata, PAGESIZE, index_to_offset(0));
     if (meta_write != PAGESIZE) {
-      free(metadata);
-      free(new);
-      return -1;
+      return_status = STATUS_BAD_WRITE;
+      goto cleanup;
     }
-    free(new);
+    goto cleanup;
   }
 
   // free list is not empty, append to the tail.
 
-  freepage *old = calloc(1, PAGESIZE);
+  old = calloc(1, PAGESIZE);
   old->offset = pageloc;
 
   int old_tail = pwrite(file->storefd, old, PAGESIZE, metadata->freelist_tail.offset);
   if (old_tail != PAGESIZE) {
-    free(metadata);
-    free(old);
-    return -1;
+    return_status = STATUS_BAD_WRITE;
+    goto cleanup;
   }
   
-  freepage *new = calloc(1, PAGESIZE);
+  new = calloc(1, PAGESIZE);
   new->offset = -1;
 
   int free_write = pwrite(file->storefd, new, PAGESIZE, pageloc);
   if (free_write != PAGESIZE) {
-    free(metadata);
-    free(old);
-    free(new);
-    return -1;
+    return_status = STATUS_BAD_WRITE;
+    goto cleanup;
   }
 
   // set the new tail
   metadata->freelist_tail.offset = pageloc;
   int meta_write = pwrite(file->storefd, metadata, PAGESIZE, index_to_offset(0));
   if (meta_write != PAGESIZE) {
-    free(metadata);
-    free(old);
-    free(new);
-    return -1;
+    return_status = STATUS_BAD_WRITE;
+    goto cleanup;
   }
-  
+
+  goto cleanup;
+ cleanup:
   free(metadata);
   free(old);
   free(new);
-  return 0;
+  return return_status;
 }
 /*
   find the page, located at `index` in `file`, if it exists, and copy the
@@ -373,55 +370,55 @@ int free_page(backing *file, int index)
   It is assumed that the `dest` pointer can hold at least
   PAGESIZE bytes.
  */
-int get_page(void *dest, backing *file, int page_index)
+status get_page(void **dest, backing *file, ssize_t page_index)
 {
-  int pageloc = index_to_offset(page_index);
+  ssize_t pageloc = index_to_offset(page_index);
   if (pageloc == 0) {
     // the metadata page is special. no direct reads.
-    return -1;
+    *dest = NULL;
+    return STATUS_META_PAGE;
   }
   if (file == NULL) {
     // no backing to read from!
-    return -1;
+    *dest = NULL;
+    return STATUS_NO_FILE;
   }
   if (lseek(file->storefd, pageloc, SEEK_SET) == -1) {
     // page not found error?
-    return -1;
+    *dest = NULL;
+    return STATUS_BAD_SEEK;
   }
   // attempt to read the page.
-  if (pread(file->storefd, dest, PAGESIZE, index_to_offset(page_index)) != PAGESIZE) {
+  if (pread(file->storefd, *dest, PAGESIZE, index_to_offset(page_index)) != PAGESIZE) {
     // read failed!
-    return -1;
+    *dest = NULL;
+    return STATUS_BAD_READ;
   }
   
-  return 0;
+  return STATUS_OK;
 }
 /*
   given that the page exists, copy the full PAGESIZE from `src`
   to the page specified by `page_index`
  */
-int put_page(void *src, backing *file, int page_index)
+status put_page(void *src, backing *file, ssize_t page_index)
 {
-  int pageloc = index_to_offset(page_index);
+  ssize_t pageloc = index_to_offset(page_index);
   if (pageloc == 0) {
     // the metadata page is special. no direct reads.
-    return -1;
+    return STATUS_META_PAGE;
   }
   if (file == NULL) {
-    fprintf(stderr,"no backing to read from!\n");
-    return -1;
+    return STATUS_NO_FILE;
   }
   if (lseek(file->storefd, pageloc, SEEK_SET) == -1) {
-    fprintf(stderr,"page %i not found\n", page_index);
-    return -1;
+    return STATUS_BAD_SEEK;
   }
   // attempt to read the page.
-  int bytes = pwrite(file->storefd, src, PAGESIZE, index_to_offset(page_index));
+  ssize_t bytes = pwrite(file->storefd, src, PAGESIZE, index_to_offset(page_index));
   if (bytes != PAGESIZE) {
-    fprintf(stderr,"write() failed!, %i bytes written.\n errno: %i\npageoffset: %i\n", bytes, errno, pageloc);
-    perror("error: ");
-    return -1;
+    return STATUS_BAD_WRITE;
   }
   
-  return 0;
+  return STATUS_OK;
 }

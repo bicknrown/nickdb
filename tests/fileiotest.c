@@ -19,49 +19,52 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "../src/lib/fileio.h"
 
-
 int main(int argc, char *argv[]){
   
-  backing *files = create_new_backing("testfilename");
-  if (files == NULL) {
-    printf("could not create files! structure was NULL");
-    return -1;
+  backing *file = calloc(1, sizeof(backing));
+  status file_status= create_new_backing("testfilename", &file);
+  if (file_status != STATUS_OK) {
+    fprintf(stderr, "could not create files! status was NOT OK");
+    return STATUS_TEST_ERR;
   }
-  printf("\nprinting file descriptors:\n");
-  printf("metafd: %i\n", files->metafd);
-  printf("storefd: %i\n", files->storefd);
+  fprintf(stderr, "\nprinting file descriptor:\n");
+  fprintf(stderr, "storefd: %i\n", file->storefd);
 
-  printf("\n closing filestore...\n");
-  close_backing(files);
-  files = NULL;
+  fprintf(stderr, "\n closing filestore...\n");
+  close_backing(file);
+  free(file);
+  file = NULL;
+  file_status = STATUS_TEST_RESET;
 
   
-  files = open_backing("testfilename");
-  if (files == NULL) {
-    printf("could not open files! structure was NULL");
-    return -1;
+  file = calloc(1, sizeof(backing));
+  file_status = open_backing("testfilename", &file);
+  if (file_status != STATUS_OK) {
+    fprintf(stderr, "could not create files! status was NOT OK");
+    return STATUS_TEST_ERR;
   }
-  printf("\nprinting file descriptors:\n");
-  printf("metafd: %i\n", files->metafd);
-  printf("storefd: %i\n", files->storefd);
+  fprintf(stderr, "\nprinting file descriptor:\n");
+  fprintf(stderr, "storefd: %i\n", file->storefd);
 
+  fprintf(stderr, "\n closing filestore...\n");
+  close_backing(file);
+  free(file);
+  file = NULL;
+  file_status = STATUS_TEST_RESET;
 
-  printf("\n closing filestore...\n");
-  close_backing(files);
-  files = NULL;
-
-  if (remove_backing("testfilename") == 0) {
-    printf("files removed!\n");
+  file_status = remove_backing("testfilename");
+  if (file_status != STATUS_OK) {
+    fprintf(stderr, "files could not be removed.!");
+    return STATUS_BAD_REMOVE;
   }
   else {
-    printf("files could not be removed.!");
-    return -1;
+    fprintf(stderr, "files removed!\n");
   }
   
-  
-  return 0;
+  return STATUS_OK;
 }

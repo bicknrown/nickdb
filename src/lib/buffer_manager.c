@@ -26,7 +26,7 @@
 /*
   calculate the frame index from any meta_frame in the free list.
  */
-inline int get_frame_index(buffer_manager *man, meta_frame *meta)
+int get_frame_index(buffer_manager *man, meta_frame *meta)
 {
   return (((void *)meta) - ((void *)man->metaframes)) / sizeof(meta_frame);
 }

@@ -18,10 +18,9 @@
 
  */
 
-#include <stdio.h>
 #include <string.h>
 
-#include "lib/fileio.h"
+#include "lib/buffer_manager.h"
 
 
 int main(int argc, char *argv[]){
