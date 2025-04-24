@@ -29,6 +29,8 @@
 
 #define STOREEXT ".store"
 
+#define METADATA 0
+
 /*
   a not awful way to emulate errno functionality with a compile time check.
   https://stackoverflow.com/a/58500930
@@ -51,6 +53,10 @@ typedef enum status {
 
   STATUS_META_PAGE,
 
+  STATUS_NO_MANAGER,
+
+  STATUS_NO_FREE_FRAMES,
+  
   STATUS_TEST_RESET,
   STATUS_TEST_ERR,
 

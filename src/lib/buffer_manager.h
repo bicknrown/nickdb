@@ -28,9 +28,11 @@ typedef enum frame_state {
 
 typedef char frame[PAGESIZE];
 
+typedef ssize_t frame_index;
+
 typedef struct meta_frame {
   frame_state state;
-  int page_index;
+  page_index index;
   // if free or dirty, this next pointer is now useful.
   struct meta_frame *next_free_or_dirty;
 } meta_frame;
@@ -41,8 +43,8 @@ typedef struct meta_frame {
   and freed by buff_destroy()
  */
 typedef struct buffer_manager {
-  backing *backing;
-  int frames;
+  backing *store;
+  size_t frames;
   // a contagious region which is `frames * PAGESIZE` bytes large,
   // can be treated like an array of frames.
   frame *buffer;
@@ -64,12 +66,14 @@ typedef struct buffer_manager {
 } buffer_manager;
 
 // helpers
-int get_frame_index(buffer_manager *man, meta_frame *meta);
+frame_index get_frame_index(buffer_manager *manager, meta_frame *meta);
+
+
 
 // buffer manager
-buffer_manager *buff_create(char *storename, int frames);
-int buff_destroy(buffer_manager *man);
-void *buff_pin(buffer_manager *man, int page_index);
-int buff_unpin(buffer_manager *man, void *frame);
-int buff_mark_page(buffer_manager *man, void *frame);
-int buff_flush_all(buffer_manager *man);
+status buff_create(char *storename, buffer_manager **manager, int frames);
+status buff_destroy(buffer_manager **manager);
+status buff_pin(buffer_manager *manager, frame *pinned, page_index index);
+status buff_unpin(buffer_manager *manager, void *frame);
+status buff_mark_page(buffer_manager *manager, void *frame);
+status buff_flush_all(buffer_manager *manager);

@@ -26,7 +26,7 @@
 /*
   calculate the frame index from any meta_frame in the free list.
  */
-int get_frame_index(buffer_manager *man, meta_frame *meta)
+frame_index get_frame_index(buffer_manager *man, meta_frame *meta)
 {
   return (((void *)meta) - ((void *)man->metaframes)) / sizeof(meta_frame);
 }
@@ -39,38 +39,41 @@ int get_frame_index(buffer_manager *man, meta_frame *meta)
   returns NULL in error.
   
  */
-buffer_manager *buff_create(char *storename, int frames)
+status buff_create(char *storename, buffer_manager **manager, int frames)
 {
-  backing *store = open_backing(storename);
-  if (store == NULL){
-    return NULL; 
+  backing *store = NULL;
+  status backing_status = open_backing(storename, store);
+  if (backing_status != STATUS_OK){
+    return STATUS_NO_BACKING; 
   }
 
   // the meta structure itself.
-  buffer_manager *manager = calloc(1, sizeof(buffer_manager));
+  *manager = calloc(1, sizeof(buffer_manager));
   // initial metadata
-  manager->backing = store;
-  manager->frames = frames;
+  (*manager)->store = store;
+  (*manager)->frames = frames;
   // the pointer for the actual buffer
-  manager->buffer = calloc(frames, sizeof(frame));
+  (*manager)->buffer = calloc(frames, sizeof(frame));
   // the metadata frame buffer
-  manager->metaframes = calloc(frames, sizeof(meta_frame));
+  (*manager)->metaframes = calloc(frames, sizeof(meta_frame));
   // the free list of frame starts with the the first frame.
-  manager->freelist = manager->metaframes;
+  (*manager)->freelist = (*manager)->metaframes;
   // (all the frames are free!)
   for (int i=0; i < frames; i++) {
     // this should not walk of the end...
     if (i < frames - 1 ){
-      manager->metaframes[i].next_free_or_dirty = &manager->metaframes[i + 1];      
+      (*manager)->metaframes[i].next_free_or_dirty = &(*manager)->metaframes[i + 1];
+      (*manager)->metaframes[i].state = FS_UNPINNED;
     }
     else {
-      manager->metaframes[i].next_free_or_dirty = NULL; 
+      (*manager)->metaframes[i].next_free_or_dirty = NULL;
+      (*manager)->metaframes[i].state = FS_UNPINNED;
     }
   }
   // the write-back queue is empty to start.
-  manager->writeback = NULL;
+  (*manager)->writeback = NULL;
   
-  return manager;
+  return STATUS_OK;
 }
 
 /*
@@ -78,55 +81,90 @@ buffer_manager *buff_create(char *storename, int frames)
   and then free each section of allocated memory from the manager,
   including the manager itself. and close the associated backing on disk.
 
-  returns 0 on success, -1 on error.
+  check status codes for errors.
  */
-int buff_destroy(buffer_manager *man)
+status buff_destroy(buffer_manager **manager)
 {
   // if there is no manager, we are done here.
-  if (man == NULL){
-    return -1;
+  if (manager == NULL){
+    return STATUS_NO_MANAGER;
   }
 
   // for every dirty frame we have, we need to write it back to the disk store.
-  for (meta_frame *meta = man->writeback; meta != NULL; meta = meta->next_free_or_dirty){
-    int put = put_page(man->buffer[get_frame_index(man, meta)], man->backing, meta->page_index);
+  for (meta_frame *meta = (*manager)->writeback; meta != NULL; meta = meta->next_free_or_dirty){
+    int put = put_page((*manager)->buffer[get_frame_index((*manager), meta)], (*manager)->store, meta->index);
     if (put == 0) {
       meta->state = FS_UNPINNED;
     }
   }
 
   // i'm freeeeeeeee!
-  free(man->metaframes);
-  free(man->buffer);
+  free((*manager)->metaframes);
+  free((*manager)->buffer);
 
-  close_backing(man->backing);
+  close_backing((*manager)->store);
 
-  free(man);
+  free(*manager);
+  *manager = NULL;
   // free fallin'!
   
-  return 0;
+  return STATUS_OK;
 }
 
-void *buff_pin(buffer_manager *man, int page_index)
+/*
+  take the page index from the argument, fetch it from the backing store, and
+  store it in the buffer, setting it,s meta data correctly, and setting the
+  return pointer `frame` to the pointer in the buffer array.
+ */
+status buff_pin(buffer_manager *manager, frame *pinned, page_index index)
 {
-  //
-  return NULL;
+  if (manager == NULL) {
+    return STATUS_NO_MANAGER;
+  }
+  
+  if (index == METADATA) {
+    return STATUS_META_PAGE;
+    // cannot work on the meta page.
+  }
+
+  if (manager->freelist == NULL) {
+    // no more free pages!
+    return STATUS_NO_FREE_FRAMES;
+  }
+
+  // claim the free page
+  meta_frame *free_frame = manager->freelist;
+  
+  // move the manager onto the next one.
+  *manager->freelist = *manager->freelist->next_free_or_dirty;
+
+  frame_index frame = get_frame_index(manager, free_frame);
+  
+  status pin_status = get_page(manager->buffer[frame], manager->store, index);
+  if (pin_status != STATUS_OK) {
+    return pin_status;
+  }
+
+  // set the pointer for the region.
+  pinned = &manager->buffer[frame];
+  
+  return STATUS_OK;
 }
 
-int buff_unpin(buffer_manager *man, void *frame)
+status buff_unpin(buffer_manager *manager, void *frame)
 {
   //
-  return -1;
+  return STATUS_ERR;
 }
 
-int buff_mark_page(buffer_manager *man, void *frame)
+status buff_mark_page(buffer_manager *manager, void *frame)
 {
   //
-  return -1;
+  return STATUS_ERR;
 }
 
-int buff_flush_all(buffer_manager *man)
+status buff_flush_all(buffer_manager *manager)
 {
   //
-  return -1;
+  return STATUS_ERR;
 }
