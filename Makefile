@@ -19,9 +19,13 @@
 
 CC := gcc
 
-CFLAGS := -O -g -Wall -Werror -std=c99 -D_DEFAULT_SOURCE -D_GNU_SOURCE
+CFLAGS := -O2 -Wall -Werror -std=c99 -D_DEFAULT_SOURCE -D_GNU_SOURCE
+
+CDEBUGFLAGS := -O0 -g -Wall -Werror -fsanitize=address -fsanitize=leak -std=c99 -D_DEFAULT_SOURCE -D_GNU_SOURCE -DDEBUG
 
 LDFLAGS :=
+
+LDASNFLAGS := -static-libubsan
 
 TESTS := fileiotest pageiotest
 
@@ -35,8 +39,11 @@ LIBS := $(LIBDIR)constants.c $(LIBDIR)fileio.c $(LIBDIR)buffer_manager.c
 LIBOBJS := $(patsubst %.c,%.o,$(LIBS))
 
 
-nickdb: $(OBJS) $(LIBOBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+nickdb: $(SOURCES) $(LIBS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
+
+debug-nickdb: $(SOURCES) $(LIBS)
+	$(CC) $(CDEBUGFLAGS) $(LDASNFLAGS) -o $@ $^
 
 test: $(TESTS)
 	@echo
@@ -46,17 +53,17 @@ test: $(TESTS)
 	done
 	@echo
 
-%.o: %.c
-	$(CC) -c $< $(CFLAGS) -o $@
-
 %: tests/%.o $(LIBOBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(CC) $(CDEBUGFLAGS) $(LDASNFLAGS) -o $@ $^
 
 clean:
 	rm -f src/*~ src/lib/*~ src/lib/*/*~ tests/*~ $(OBJS) $(LIBOBJS)
 	rm -f $(TESTS)
-	rm -f *~ nickdb
+	rm -f *~nickdb
+	rm -f *~debug-nickdb
 	rm -f *.store
 	rm -f *.meta
+	rm -f nickdb
+	rm -f debug-nickdb
 
 .PHONY: all clean
