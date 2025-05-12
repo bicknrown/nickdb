@@ -27,7 +27,7 @@
 int main(int argc, char *argv[]){
   
   backing *file = calloc(1, sizeof(backing));
-  status file_status= create_new_backing("testfilename", &file);
+  status file_status= create_new_backing("testfilename", file);
   if (file_status != STATUS_OK) {
     fprintf(stderr, "could not create files! status was NOT OK");
     return STATUS_TEST_ERR;
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]){
 
   
   file = calloc(1, sizeof(backing));
-  file_status = open_backing("testfilename", &file);
+  file_status = open_backing("testfilename", file);
   if (file_status != STATUS_OK) {
     fprintf(stderr, "could not create files! status was NOT OK");
     return STATUS_TEST_ERR;

@@ -27,9 +27,9 @@
 #define PAGESIZE 4096
 
 int main(int argc, char *argv[]){
-  
-  backing *file = create_new_backing("teststore");
-  if (file == NULL) {
+  backing *file = calloc(1, sizeof(backing));
+  status storestatus = create_new_backing("teststore", file);
+  if (storestatus != STATUS_OK) {
     printf("could not create files! structure was NULL");
     return -1;
   }
@@ -42,12 +42,12 @@ int main(int argc, char *argv[]){
   memset(first_src, 65, PAGESIZE);
   
 
-  int first = alloc_page(first_src, file);
-  if (first == -1) {
+  page_index first = -1;
+  status first_status = alloc_page(first_src, &first, file);
+  if (first_status != STATUS_OK) {
     printf("\ncould not get page!\n");
     return -1;
   }
-  printf("page id allocated and written: %i\n", first);
 
   void *first_dest = calloc(1, PAGESIZE);
   printf("getting page\n");
@@ -66,13 +66,13 @@ int main(int argc, char *argv[]){
   close_backing(file);
   file = NULL;
 
-  /* if (remove_backing("teststore") == 0) {
+  if (remove_backing("teststore") == 0) {
     printf("files removed!\n");
   }
   else {
     printf("files could not be removed.!");
     return -1;
-    }*/
+  }
   
   
   return 0;
