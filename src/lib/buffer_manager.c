@@ -92,8 +92,8 @@ status buff_destroy(buffer_manager **manager)
 
   // for every dirty frame we have, we need to write it back to the disk store.
   for (meta_frame *meta = (*manager)->writeback; meta != NULL; meta = meta->next_free_or_dirty){
-    int put = put_page((*manager)->buffer[get_frame_index((*manager), meta)], (*manager)->store, meta->index);
-    if (put == 0) {
+    status put = put_page((*manager)->buffer[get_frame_index((*manager), meta)], (*manager)->store, meta->index);
+    if (put == STATUS_OK) {
       meta->state = FS_UNPINNED;
     }
   }
