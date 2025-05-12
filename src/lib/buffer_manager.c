@@ -135,36 +135,101 @@ status buff_pin(buffer_manager *manager, frame *pinned, page_index index)
   // claim the free page
   meta_frame *free_frame = manager->freelist;
   
-  // move the manager onto the next one.
-  *manager->freelist = *manager->freelist->next_free_or_dirty;
-
-  frame_index frame = get_frame_index(manager, free_frame);
+  frame_index frameidx = get_frame_index(manager, free_frame);
   
-  status pin_status = get_page(manager->buffer[frame], manager->store, index);
+  status pin_status = get_page(manager->buffer[frameidx], manager->store, index);
   if (pin_status != STATUS_OK) {
     return pin_status;
   }
+  // move the manager onto the next one.
+  *manager->freelist = *manager->freelist->next_free_or_dirty;
 
+  // actually mark the page as pinned.
+  manager->metaframes[frameidx].state = FS_PINNED;
+  
   // set the pointer for the region.
-  pinned = &manager->buffer[frame];
+  pinned = &manager->buffer[frameidx];
   
   return STATUS_OK;
 }
 
+/*
+  using the `frame`, we check if the page is dirty or clean. if it is clean, then
+  we mark the frame's metadata as FS_UNPINNED. If it is dirty, we make the frame's
+  meta data with FS_UNPINNED_DIRTY, and add it to writeback list.
+ */
 status buff_unpin(buffer_manager *manager, void *frame)
 {
-  //
-  return STATUS_ERR;
+  if (manager == NULL) {
+    return STATUS_NO_MANAGER;
+  }
+  frame_index frameidx = get_frame_index(manager, frame);
+
+  if (manager->metaframes[frameidx].state == FS_PINNED_DIRTY){
+    manager->metaframes[frameidx].state = FS_UNPINNED_DIRTY;
+    if (manager->writeback != NULL){
+      meta_frame *oldhead = manager->writeback;
+      manager->writeback = &manager->metaframes[frameidx];
+      manager->metaframes[frameidx].next_free_or_dirty = oldhead;
+    }
+  }
+  else if (manager->metaframes[frameidx].state == FS_PINNED){
+    manager->metaframes[frameidx].state = FS_UNPINNED;
+    if (manager->freelist != NULL){
+      meta_frame *oldhead = manager->freelist;
+      manager->freelist = &manager->metaframes[frameidx];
+      manager->metaframes[frameidx].next_free_or_dirty = oldhead;
+    }
+    else{
+      // if we are trying to unpin a page on a frame that isn't in either of those two states,
+      // there is most likely an issue
+      return STATUS_ERR;
+    }
+  }
+  return STATUS_OK;
 }
 
+/*
+  this function is used to mark frame/page pairs as dirty,
+  this works for all page types except FS_UNPINNED.
+ */
 status buff_mark_page(buffer_manager *manager, void *frame)
 {
-  //
-  return STATUS_ERR;
+  if (manager == NULL) {
+    return STATUS_NO_MANAGER;
+  }
+  frame_index frameidx = get_frame_index(manager, frame);
+
+  if (manager->metaframes[frameidx].state == FS_PINNED){
+    manager->metaframes[frameidx].state = FS_PINNED_DIRTY;
+  }
+  else if (manager->metaframes[frameidx].state == FS_PINNED_DIRTY){
+    // we are already here!
+  }
+  else {
+    return STATUS_MARK_ERR;
+  }
+  
+  return STATUS_OK;
 }
 
+/*
+  take all currently dirty pages being held in the buffer manager, and write
+  them to disk.
+ */
 status buff_flush_all(buffer_manager *manager)
 {
-  //
-  return STATUS_ERR;
+  // if there is no manager, we are done here.
+  if (manager == NULL){
+    return STATUS_NO_MANAGER;
+  }
+
+  // for every dirty frame we have, we need to write it back to the disk store.
+  for (meta_frame *meta = manager->writeback; meta != NULL; meta = meta->next_free_or_dirty){
+    status put = put_page(manager->buffer[get_frame_index(manager, meta)], manager->store, meta->index);
+    if (put == STATUS_OK) {
+      meta->state = FS_UNPINNED;
+    }
+  }
+  return STATUS_OK;
 }
