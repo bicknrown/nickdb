@@ -105,6 +105,8 @@ status buff_destroy(buffer_manager **manager)
   free((*manager)->metaframes);
   free((*manager)->buffer);
 
+  g_hash_table_destroy((*manager)->lookup_table);
+  
   close_backing((*manager)->store);
 
   free(*manager);
