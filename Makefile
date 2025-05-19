@@ -42,10 +42,10 @@ GLIBH := `pkg-config --cflags glib-2.0`
 GLIBL := `pkg-config --libs glib-2.0`
 
 nickdb: $(SOURCES) $(LIBS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(GLIBH) $(GLIBL) -o $@ $^
+	$(CC) $(CFLAGS) $(LDFLAGS) $(GLIBH) -o $@ $^ $(GLIBL)
 
 debug: $(SOURCES) $(LIBS) setup
-	$(CC) $(CDEBUGFLAGS) $(LDASNFLAGS) $(GLIBH) $(GLIBL) -o $@ $^
+	$(CC) $(CDEBUGFLAGS) $(LDASNFLAGS) $(GLIBH) -o $@ $^ $(GLIBL)
 
 test: $(TESTS)
 	@echo
@@ -56,7 +56,7 @@ test: $(TESTS)
 	@echo
 
 %: tests/%.o $(LIBOBJS)
-	$(CC) $(CDEBUGFLAGS) $(LDASNFLAGS) $(GLIBH) $(GLIBL) -o $@ $^
+	$(CC) $(CDEBUGFLAGS) $(LDASNFLAGS) $(GLIBH) -o $@ $^ $(GLIBL)
 
 clean:
 	rm -f src/*~ src/lib/*~ src/lib/*/*~ tests/*~ $(OBJS) $(LIBOBJS)

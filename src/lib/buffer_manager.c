@@ -72,6 +72,9 @@ status buff_create(char *storename, buffer_manager **manager, int frames)
   }
   // the write-back queue is empty to start.
   (*manager)->writeback = NULL;
+
+  // initialize the lookup hashtable.
+  (*manager)->lookup_table = g_hash_table_new(NULL, NULL);
   
   return STATUS_OK;
 }

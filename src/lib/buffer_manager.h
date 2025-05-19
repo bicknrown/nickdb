@@ -18,6 +18,7 @@
 
  */
 #include "fileio.h"
+#include "glib-2.0/glib.h"
 
 typedef enum frame_state {
   FS_PINNED,
@@ -62,6 +63,9 @@ typedef struct buffer_manager {
   // this list must contain every frame in the state `FS_UNPINNED_DIRTY`.
   // NULL on initialization.
   meta_frame *writeback;
+
+  // a hashtable which keeps track of page ids and frame ids.
+  GHashTable *lookup_table;
   
 } buffer_manager;
 
