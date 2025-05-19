@@ -38,12 +38,14 @@ OBJS := $(patsubst %.c,%.o,$(SOURCES))
 LIBS := $(LIBDIR)constants.c $(LIBDIR)fileio.c $(LIBDIR)buffer_manager.c 
 LIBOBJS := $(patsubst %.c,%.o,$(LIBS))
 
+GLIBH := `pkg-config --cflags glib-2.0`
+GLIBL := `pkg-config --libs glib-2.0`
 
 nickdb: $(SOURCES) $(LIBS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) $(LDFLAGS) $(GLIBH) $(GLIBL) -o $@ $^
 
-debug-nickdb: $(SOURCES) $(LIBS)
-	$(CC) $(CDEBUGFLAGS) $(LDASNFLAGS) -o $@ $^
+debug: $(SOURCES) $(LIBS) setup
+	$(CC) $(CDEBUGFLAGS) $(LDASNFLAGS) $(GLIBH) $(GLIBL) -o $@ $^
 
 test: $(TESTS)
 	@echo
@@ -54,7 +56,7 @@ test: $(TESTS)
 	@echo
 
 %: tests/%.o $(LIBOBJS)
-	$(CC) $(CDEBUGFLAGS) $(LDASNFLAGS) -o $@ $^
+	$(CC) $(CDEBUGFLAGS) $(LDASNFLAGS) $(GLIBH) $(GLIBL) -o $@ $^
 
 clean:
 	rm -f src/*~ src/lib/*~ src/lib/*/*~ tests/*~ $(OBJS) $(LIBOBJS)
@@ -62,8 +64,6 @@ clean:
 	rm -f *~nickdb
 	rm -f *~debug-nickdb
 	rm -f *.store
-	rm -f *.meta
-	rm -f nickdb
-	rm -f debug-nickdb
+	rm -f nickdb debug
 
 .PHONY: all clean

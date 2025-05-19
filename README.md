@@ -6,6 +6,10 @@ a "database" for a "seminar" happening over the winter semester of 2025
 
 we are going through the textbook "patterns in data management"
 
+## libraries
+
+this project makes use of [GLIB](https://docs.gtk.org/glib/) which is licensed for use under the (LGPL-2.1-or-later)[https://www.gnu.org/licenses/old-licenses/lgpl-2.1.en.html] copyleft license.
+
 ## copying
    Copyright 2025 Nick Brown <njbrown4@buffalo.edu>
 
