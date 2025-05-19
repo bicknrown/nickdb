@@ -18,8 +18,8 @@
 
  */
 
-#include "stdlib.h"
-#include "string.h"
+#include <stdlib.h>
+#include <string.h>
 
 #include "./buffer_manager.h"
 
@@ -74,7 +74,7 @@ status buff_create(char *storename, buffer_manager **manager, int frames)
   (*manager)->writeback = NULL;
 
   // initialize the lookup hashtable.
-  (*manager)->lookup_table = g_hash_table_new(NULL, NULL);
+  (*manager)->lookup_table = g_hash_table_new_full(NULL, NULL, free, free);
   
   return STATUS_OK;
 }
@@ -141,6 +141,29 @@ status buff_pin(buffer_manager *manager, frame *pinned, page_index index)
   meta_frame *free_frame = manager->freelist;
   
   frame_index frameidx = get_frame_index(manager, free_frame);
+
+  // init for adding the binding to the hashtable.
+  page_index *pageidxptr = calloc(1, sizeof(page_index));
+  frame_index *frameidxptr = calloc(1, sizeof(frame_index));
+  *pageidxptr = index;
+  *frameidxptr = frameidx;
+  
+  // check if it exists in the table first.
+  frame_index *existing_frame = g_hash_table_lookup(manager->lookup_table, pageidxptr);
+  
+  if (existing_frame != NULL && *existing_frame == *frameidxptr) {
+      gboolean insert = g_hash_table_insert(manager->lookup_table, pageidxptr, frameidxptr);
+      if (insert != true) {
+	free(pageidxptr);
+	free(frameidxptr);
+	return STATUS_ERR;
+      }
+  }
+  else {
+    free(pageidxptr);
+    free(frameidxptr);
+    return STATUS_ERR;
+  }
   
   status pin_status = get_page(manager->buffer[frameidx], manager->store, index);
   if (pin_status != STATUS_OK) {
@@ -159,10 +182,11 @@ status buff_pin(buffer_manager *manager, frame *pinned, page_index index)
 }
 
 /*
-  using the `frame`, we check if the page is dirty or clean. if it is clean, then
-  we mark the frame's metadata as FS_UNPINNED. If it is dirty, we make the frame's
-  meta data with FS_UNPINNED_DIRTY, and add it to writeback list.
+  using the `frame`, we check if the page is dirty or clean. if it is clean,
+  then we mark the frame's metadata as FS_UNPINNED. If it is dirty, we make the
+  frame's meta data with FS_UNPINNED_DIRTY, and add it to writeback list.
  */
+// TODO: fix what happens when the freelist/writeback is null
 status buff_unpin(buffer_manager *manager, void *frame)
 {
   if (manager == NULL) {

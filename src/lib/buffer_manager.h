@@ -17,8 +17,12 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
  */
+
+// being used for hashtable only.
+#include <stdbool.h>
+#include <glib.h>
+
 #include "fileio.h"
-#include "glib-2.0/glib.h"
 
 typedef enum frame_state {
   FS_PINNED,
