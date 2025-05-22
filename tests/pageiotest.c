@@ -64,8 +64,11 @@ int main(int argc, char *argv[]){
   
   printf("\n closing filestore...\n");
   close_backing(file);
-  file = NULL;
 
+  free(file);
+  free(first_src);
+  free(first_dest);
+  
   if (remove_backing("teststore") == 0) {
     printf("files removed!\n");
   }

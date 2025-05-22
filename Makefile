@@ -51,7 +51,7 @@ test: $(TESTS)
 	@echo
 	@for test in $^; do                                   \
 	    printf "Running %-20s: " "$$test";                \
-	    (./$$test && echo "passed") || echo "failed";       \
+	    (./$$test && echo "passed\n") || echo "failed\n";       \
 	done
 	@echo
 
