@@ -38,13 +38,13 @@ OBJS := $(patsubst %.c,%.o,$(SOURCES))
 LIBS := $(LIBDIR)constants.c $(LIBDIR)fileio.c $(LIBDIR)buffer_manager.c 
 LIBOBJS := $(patsubst %.c,%.o,$(LIBS))
 
-GLIBH := `pkg-config --cflags glib-2.0`
-GLIBL := `pkg-config --libs glib-2.0`
+GLIBH := $(shell pkg-config --cflags glib-2.0)
+GLIBL := $(shell pkg-config --libs glib-2.0)
 
 nickdb: $(SOURCES) $(LIBS)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(GLIBH) -o $@ $^ $(GLIBL)
 
-debug: $(SOURCES) $(LIBS) setup
+debug: $(SOURCES) $(LIBS)
 	$(CC) $(CDEBUGFLAGS) $(LDASNFLAGS) $(GLIBH) -o $@ $^ $(GLIBL)
 
 test: $(TESTS)
@@ -55,14 +55,14 @@ test: $(TESTS)
 	done
 	@echo
 
-%: tests/%.o $(LIBOBJS)
+%: tests/%.c $(LIBS)
 	$(CC) $(CDEBUGFLAGS) $(LDASNFLAGS) $(GLIBH) -o $@ $^ $(GLIBL)
 
 clean:
 	rm -f src/*~ src/lib/*~ src/lib/*/*~ tests/*~ $(OBJS) $(LIBOBJS)
 	rm -f $(TESTS)
 	rm -f *~nickdb
-	rm -f *~debug-nickdb
+	rm -f *~debug
 	rm -f *.store
 	rm -f nickdb debug
 
