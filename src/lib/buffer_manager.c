@@ -195,6 +195,14 @@ status buff_unpin(buffer_manager *manager, void *frame)
 
   if (manager->metaframes[frameidx].state == FS_PINNED_DIRTY){
     manager->metaframes[frameidx].state = FS_UNPINNED_DIRTY;
+
+    // hashtable removal
+    page_index *pageidxptr = calloc(1, sizeof(page_index));
+    *pageidxptr = manager->metaframes[frameidx].index;
+    gboolean remove_key = g_hash_table_remove(manager->lookup_table, pageidxptr);
+    if (remove_key != true) {
+      free(pageidxptr);
+    }
     if (manager->writeback != NULL){
       meta_frame *oldhead = manager->writeback;
       manager->writeback = &manager->metaframes[frameidx];
@@ -207,6 +215,15 @@ status buff_unpin(buffer_manager *manager, void *frame)
   }
   else if (manager->metaframes[frameidx].state == FS_PINNED){
     manager->metaframes[frameidx].state = FS_UNPINNED;
+
+    // hashtable removal
+    page_index *pageidxptr = calloc(1, sizeof(page_index));
+    *pageidxptr = manager->metaframes[frameidx].index;
+    gboolean remove_key = g_hash_table_remove(manager->lookup_table, pageidxptr);
+    if (remove_key != true) {
+      free(pageidxptr);
+    }
+    
     if (manager->freelist != NULL){
       meta_frame *oldhead = manager->freelist;
       manager->freelist = &manager->metaframes[frameidx];
