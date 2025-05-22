@@ -186,7 +186,6 @@ status buff_pin(buffer_manager *manager, frame *pinned, page_index index)
   then we mark the frame's metadata as FS_UNPINNED. If it is dirty, we make the
   frame's meta data with FS_UNPINNED_DIRTY, and add it to writeback list.
  */
-// TODO: fix what happens when the freelist/writeback is null
 status buff_unpin(buffer_manager *manager, void *frame)
 {
   if (manager == NULL) {
@@ -201,6 +200,10 @@ status buff_unpin(buffer_manager *manager, void *frame)
       manager->writeback = &manager->metaframes[frameidx];
       manager->metaframes[frameidx].next_free_or_dirty = oldhead;
     }
+    else {
+      manager->writeback = &manager->metaframes[frameidx];
+      manager->metaframes[frameidx].next_free_or_dirty = NULL;
+    }
   }
   else if (manager->metaframes[frameidx].state == FS_PINNED){
     manager->metaframes[frameidx].state = FS_UNPINNED;
@@ -209,11 +212,15 @@ status buff_unpin(buffer_manager *manager, void *frame)
       manager->freelist = &manager->metaframes[frameidx];
       manager->metaframes[frameidx].next_free_or_dirty = oldhead;
     }
-    else{
-      // if we are trying to unpin a page on a frame that isn't in either of those two states,
-      // there is most likely an issue
-      return STATUS_ERR;
+    else {
+      manager->freelist = &manager->metaframes[frameidx];
+      manager->metaframes[frameidx].next_free_or_dirty = NULL;      
     }
+  }
+  else{
+    // if we are trying to unpin a page on a frame that isn't in either of those two states,
+    // there is most likely an issue
+    return STATUS_ERR;
   }
   return STATUS_OK;
 }
