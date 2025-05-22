@@ -31,6 +31,12 @@
 
 #define METADATA 0
 
+typedef enum page_type{
+  FREE_PAGE,
+  DATA_PAGE,
+  DIR_PAGE,
+} page_type;
+
 /*
   a not awful way to emulate errno functionality with a compile time check.
   https://stackoverflow.com/a/58500930
