@@ -164,7 +164,8 @@ status buff_pin(buffer_manager *manager, frame *pinned, page_index index)
     free(frameidxptr);
     return STATUS_ERR;
   }
-  
+
+  // actually fetch the data from the disk.
   status pin_status = get_page(manager->buffer[frameidx], manager->store, index);
   if (pin_status != STATUS_OK) {
     return pin_status;
@@ -174,6 +175,9 @@ status buff_pin(buffer_manager *manager, frame *pinned, page_index index)
 
   // actually mark the page as pinned.
   manager->metaframes[frameidx].state = FS_PINNED;
+
+  // set the pageid into the metadata frame
+  manager->metaframes[frameidx].index = index;
   
   // set the pointer for the region.
   pinned = &manager->buffer[frameidx];
