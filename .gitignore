@@ -1,0 +1,9 @@
+*
+!.gitignore
+!README.md
+!COPYING
+!Makefile
+!src/**/*.h
+!src/**/*.c
+!tests/**/*.h
+!tests/**/*.c
