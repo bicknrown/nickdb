@@ -20,7 +20,7 @@
 
 // being used for hashtable only.
 #include <stdbool.h>
-#include <glib.h>
+#include <glib-2.0/glib.h>
 
 #include "fileio.h"
 
@@ -81,7 +81,7 @@ frame_index get_frame_index(buffer_manager *manager, meta_frame *meta);
 // buffer manager
 status buff_create(char *storename, buffer_manager **manager, int frames);
 status buff_destroy(buffer_manager **manager);
-status buff_pin(buffer_manager *manager, frame *pinned, page_index index);
+status buff_pin(buffer_manager *manager, void **pinned, page_index index);
 status buff_unpin(buffer_manager *manager, void *frame);
 status buff_mark_page(buffer_manager *manager, void *frame);
 status buff_flush_all(buffer_manager *manager);

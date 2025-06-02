@@ -3,7 +3,9 @@
 !README.md
 !COPYING
 !Makefile
+!src/
 !src/**/*.h
 !src/**/*.c
+!tests/
 !tests/**/*.h
 !tests/**/*.c

@@ -19,9 +19,9 @@
 
 CC := gcc
 
-CFLAGS := -O2 -Wall -Werror -std=c99 -D_DEFAULT_SOURCE -D_GNU_SOURCE
+CFLAGS := -O2 -Wall -Werror -Wextra -std=c99 -D_DEFAULT_SOURCE -D_GNU_SOURCE
 
-CDEBUGFLAGS := -O0 -g -Wall -Werror -fsanitize=address -fsanitize=leak -std=c99 -D_DEFAULT_SOURCE -D_GNU_SOURCE -DDEBUG
+CDEBUGFLAGS := -O0 -g -Wall -Werror -Wextra -fsanitize=address -fsanitize=leak -std=c99 -D_DEFAULT_SOURCE -D_GNU_SOURCE -DDEBUG
 
 LDFLAGS :=
 

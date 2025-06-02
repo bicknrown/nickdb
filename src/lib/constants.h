@@ -18,6 +18,9 @@
 
  */
 
+#define DO_PRAGMA(x) _Pragma (#x)
+#define TODO(x) DO_PRAGMA(message ("TODO - " #x))
+
 #define PAGESIZE 4096
 
 #define STOREEXTLEN 6

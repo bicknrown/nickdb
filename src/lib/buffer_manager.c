@@ -121,7 +121,7 @@ status buff_destroy(buffer_manager **manager)
   store it in the buffer, setting it,s meta data correctly, and setting the
   return pointer `frame` to the pointer in the buffer array.
  */
-status buff_pin(buffer_manager *manager, frame *pinned, page_index index)
+status buff_pin(buffer_manager *manager, void **pinned, page_index index)
 {
   if (manager == NULL) {
     return STATUS_NO_MANAGER;
@@ -180,7 +180,7 @@ status buff_pin(buffer_manager *manager, frame *pinned, page_index index)
   manager->metaframes[frameidx].index = index;
   
   // set the pointer for the region.
-  pinned = &manager->buffer[frameidx];
+  *pinned = &manager->buffer[frameidx];
   
   return STATUS_OK;
 }
@@ -274,6 +274,7 @@ status buff_mark_page(buffer_manager *manager, void *frame)
   take all currently dirty pages being held in the buffer manager, and write
   them to disk.
  */
+// TODO: actually update the writeback list.
 status buff_flush_all(buffer_manager *manager)
 {
   // if there is no manager, we are done here.
@@ -290,3 +291,5 @@ status buff_flush_all(buffer_manager *manager)
   }
   return STATUS_OK;
 }
+
+// TODO: sync_frame() for single frame update to disk.
