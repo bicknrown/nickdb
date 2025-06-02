@@ -24,30 +24,31 @@
   configuration structure
  */
 typedef struct btree_config {
-  
+  TODO("`btree_config`- fill out and create parameters")
 } btree_config;
 
 /*
-  tree components
+  tree components types
+  all of the data about each of the nodes in the tree are stored
+  in the pages which the `btree_node` points to.
  */
-typedef struct btree_node {
-  page_type type;
-  page_index page;
+typedef void btree;
+typedef void btree_node;
 
-  // pointers
-  
-} btree_node;
-
-typedef struct btree {
-  btree_node *root;
-  
-} btree;
+/*
+  internal node structures
+  these structures are used strictly for casting on top of pages.
+  they should never be allocated!
+ */
+typedef struct int_btree_node {
+  TODO("`int_btree_node`- create fields for casting")
+} int_btree_node;
 
 /*
   btree functions
  */
 status btree_create(btree_config *config, btree **tree);
-status btree_destroy(page_index **tree);
+status btree_destroy(btree **tree);
 
 status btree_insert();
 status btree_remove();

@@ -17,3 +17,42 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
  */
+#include "btree.h"
+
+/*
+
+ */
+TODO("`btree_create()`- everything")
+status btree_create(btree_config *config, btree **tree){
+  *config = *config; *tree = *tree; // remove error of unused parameter.
+  
+  return STATUS_OK;
+}
+
+/*
+
+ */
+TODO("`btree_destroy()`- everything")
+status btree_destroy(btree **tree){
+  *tree = *tree; // remove error of unused parameter.
+  
+  return STATUS_OK;
+}
+
+/*
+
+ */
+TODO("`btree_insert()`- everything")
+status btree_insert(){
+
+  return STATUS_OK;
+}
+
+/*
+
+ */
+TODO("`btree_remove()`- everything")
+status btree_remove(){
+
+  return STATUS_OK;
+}

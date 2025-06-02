@@ -31,20 +31,24 @@ TESTS := fileiotest pageiotest
 
 SRCDIR := src/
 LIBDIR := src/lib/
+DATASTRUCTURESDIR := src/lib/datastructures/
 
 SOURCES := $(SRCDIR)nickdb.c
 OBJS := $(patsubst %.c,%.o,$(SOURCES))
 
-LIBS := $(LIBDIR)constants.c $(LIBDIR)fileio.c $(LIBDIR)buffer_manager.c 
+LIBS := $(LIBDIR)constants.c $(LIBDIR)fileio.c $(LIBDIR)buffer_manager.c
 LIBOBJS := $(patsubst %.c,%.o,$(LIBS))
+
+DATASTRUCTURES := $(DATASTRUCTURESDIR)btree.c
+DATASTRUCTUREOBJS := $(patsubst %.c,%.o,$(DATASTRUCTURES))
 
 GLIBH := $(shell pkg-config --cflags glib-2.0)
 GLIBL := $(shell pkg-config --libs glib-2.0)
 
-nickdb: $(SOURCES) $(LIBS)
+nickdb: $(SOURCES) $(LIBS) $(DATASTRUCTURES)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(GLIBH) -o $@ $^ $(GLIBL)
 
-debug: $(SOURCES) $(LIBS)
+debug: $(SOURCES) $(LIBS) $(DATASTRUCTURES)
 	$(CC) $(CDEBUGFLAGS) $(LDASNFLAGS) $(GLIBH) -o $@ $^ $(GLIBL)
 
 test: $(TESTS)
@@ -55,11 +59,11 @@ test: $(TESTS)
 	done
 	@echo
 
-%: tests/%.c $(LIBS)
+%: tests/%.c $(LIBS) $(DATASTRUCTURES)
 	$(CC) $(CDEBUGFLAGS) $(LDASNFLAGS) $(GLIBH) -o $@ $^ $(GLIBL)
 
 clean:
-	rm -f src/*~ src/lib/*~ src/lib/*/*~ tests/*~ $(OBJS) $(LIBOBJS)
+	rm -f src/*~ src/lib/*~ src/lib/*/*~ tests/*~ $(OBJS) $(LIBOBJS) $(DATASTRUCTUREOBJS)
 	rm -f $(TESTS)
 	rm -f *~nickdb
 	rm -f *~debug

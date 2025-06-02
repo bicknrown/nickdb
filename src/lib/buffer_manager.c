@@ -37,8 +37,9 @@ frame_index get_frame_index(buffer_manager *man, meta_frame *meta)
   each manager is tied to its backing store, named by `storename`
 
   returns NULL in error.
-  
+
  */
+TODO("`buff_create()`- move linked list operations out to a datastructure")
 status buff_create(char *storename, buffer_manager **manager, int frames)
 {
   backing *store = NULL;
@@ -86,6 +87,7 @@ status buff_create(char *storename, buffer_manager **manager, int frames)
 
   check status codes for errors.
  */
+TODO("`buff_destroy()`- move linked list operations out to a datastructure")
 status buff_destroy(buffer_manager **manager)
 {
   // if there is no manager, we are done here.
@@ -121,6 +123,7 @@ status buff_destroy(buffer_manager **manager)
   store it in the buffer, setting it,s meta data correctly, and setting the
   return pointer `frame` to the pointer in the buffer array.
  */
+TODO("`buff_pin()`- move linked list operations out to a datastructure")
 status buff_pin(buffer_manager *manager, void **pinned, page_index index)
 {
   if (manager == NULL) {
@@ -190,6 +193,7 @@ status buff_pin(buffer_manager *manager, void **pinned, page_index index)
   then we mark the frame's metadata as FS_UNPINNED. If it is dirty, we make the
   frame's meta data with FS_UNPINNED_DIRTY, and add it to writeback list.
  */
+TODO("`buff_unpin()`- move linked list operations out to a datastructure")
 status buff_unpin(buffer_manager *manager, void *frame)
 {
   if (manager == NULL) {
@@ -274,7 +278,7 @@ status buff_mark_page(buffer_manager *manager, void *frame)
   take all currently dirty pages being held in the buffer manager, and write
   them to disk.
  */
-// TODO: actually update the writeback list.
+TODO("`buff_flush_all()`- update the writeback list after flush")
 status buff_flush_all(buffer_manager *manager)
 {
   // if there is no manager, we are done here.
@@ -292,4 +296,4 @@ status buff_flush_all(buffer_manager *manager)
   return STATUS_OK;
 }
 
-// TODO: sync_frame() for single frame update to disk.
+TODO("'sync_frame()'- write function for single frame update to disk.")
