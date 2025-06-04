@@ -17,8 +17,10 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
  */
-
-#include "../buffer_manager.h"
+#ifndef CONSTANTSH
+#define CONSTANTSH
+#include "../constants.h"
+#endif
 
 /*
   configuration structure

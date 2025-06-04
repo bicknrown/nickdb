@@ -17,6 +17,10 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
  */
+#ifndef CONSTANTSH
+#define CONSTANTSH
+#include "constants.h"
+#endif
 
 // being used for hashtable only.
 #include <stdbool.h>

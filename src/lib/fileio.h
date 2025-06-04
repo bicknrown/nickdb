@@ -17,10 +17,13 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
  */
+#ifndef CONSTANTSH
+#define CONSTANTSH
+#include "constants.h"
+#endif
+
 #include <stdio.h>
 #include <stdint.h>
-
-#include "constants.h"
 
 typedef ssize_t page_index;
 typedef ssize_t byte_offset;
