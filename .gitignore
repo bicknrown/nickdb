@@ -4,6 +4,8 @@
 !COPYING
 !Makefile
 !src/
+!src/lib/
+!src/lib/datastructures/
 !src/**/*.h
 !src/**/*.c
 !tests/
