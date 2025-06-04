@@ -23,8 +23,8 @@
 
  */
 TODO("`btree_create()`- everything")
-status btree_create(btree_config *config, btree **tree){
-  *config = *config; *tree = *tree; // remove error of unused parameter.
+status btree_create(btree_config *config){
+  *config = *config; // remove error of unused parameter.
   
   return STATUS_OK;
 }
@@ -33,8 +33,8 @@ status btree_create(btree_config *config, btree **tree){
 
  */
 TODO("`btree_destroy()`- everything")
-status btree_destroy(btree **tree){
-  *tree = *tree; // remove error of unused parameter.
+status btree_destroy(btree tree){
+  tree = tree + 1; // remove error of unused parameter.
   
   return STATUS_OK;
 }

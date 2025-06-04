@@ -34,8 +34,8 @@ typedef struct btree_config {
   all of the data about each of the nodes in the tree are stored
   in the pages which the `btree_node` points to.
  */
-typedef void btree;
-typedef void btree_node;
+typedef page_index btree;
+typedef page_index btree_node;
 
 /*
   internal node structures
@@ -61,8 +61,8 @@ status btree_create_node(page_index page, page_type type);
 /*
   btree functions
  */
-status btree_create(btree_config *config, btree **tree);
-status btree_destroy(btree **tree);
+status btree_create(btree_config *config);
+status btree_destroy(btree tree);
 
 status btree_insert();
 status btree_remove();
