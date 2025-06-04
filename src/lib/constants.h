@@ -18,6 +18,12 @@
 
  */
 
+#ifndef CONSTANTSH
+#define CONSTANTSH
+
+#include <stdio.h>
+#include <stdbool.h>
+
 #define DO_PRAGMA(x) _Pragma (#x)
 #define TODO(x) DO_PRAGMA(message ("TODO - " #x))
 
@@ -34,11 +40,29 @@
 
 #define METADATA 0
 
+/*
+  types and states.
+ */
+
+typedef ssize_t page_index;
+typedef ssize_t byte_offset;
+
 typedef enum page_type{
   FREE_PAGE,
   DATA_PAGE,
   DIR_PAGE,
 } page_type;
+
+typedef enum frame_state {
+  FS_PINNED,
+  FS_UNPINNED,
+  FS_PINNED_DIRTY,
+  FS_UNPINNED_DIRTY,
+} frame_state;
+
+typedef char frame[PAGESIZE];
+
+typedef ssize_t frame_index;
 
 /*
   a not awful way to emulate errno functionality with a compile time check.
@@ -77,3 +101,5 @@ typedef enum status {
 } status;
 
 extern const char * const status_str[];
+
+#endif

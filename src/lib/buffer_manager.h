@@ -17,27 +17,12 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
  */
-#ifndef CONSTANTSH
-#define CONSTANTSH
 #include "constants.h"
-#endif
 
 // being used for hashtable only.
-#include <stdbool.h>
 #include <glib-2.0/glib.h>
 
 #include "fileio.h"
-
-typedef enum frame_state {
-  FS_PINNED,
-  FS_UNPINNED,
-  FS_PINNED_DIRTY,
-  FS_UNPINNED_DIRTY,
-} frame_state;
-
-typedef char frame[PAGESIZE];
-
-typedef ssize_t frame_index;
 
 typedef struct meta_frame {
   frame_state state;

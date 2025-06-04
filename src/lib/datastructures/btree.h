@@ -17,16 +17,16 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
  */
-#ifndef CONSTANTSH
-#define CONSTANTSH
+
 #include "../constants.h"
-#endif
 
 /*
   configuration structure
  */
 typedef struct btree_config {
   TODO("`btree_config`- fill out and create parameters")
+  page_index root;
+  
 } btree_config;
 
 /*
@@ -44,7 +44,19 @@ typedef void btree_node;
  */
 typedef struct int_btree_node {
   TODO("`int_btree_node`- create fields for casting")
+  page_type type;
+  
+  // the rest of the bytes on the page.
+  char bytes[PAGESIZE - (
+			 sizeof(page_type)
+			 )];
 } int_btree_node;
+
+/*
+  internal btree functions
+ */
+status btree_create_node(page_index page, page_type type);
+
 
 /*
   btree functions
