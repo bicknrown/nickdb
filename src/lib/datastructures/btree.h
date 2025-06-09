@@ -32,7 +32,6 @@ typedef struct btree_config {
   buffer_manager *manager;
   page_frame_pair root;
 
-  size_t record_size;
 
 } btree_config;
 
@@ -58,10 +57,10 @@ typedef struct int_btree_node {
 			 sizeof(page_type)
 			 )];
 } int_btree_node;
-
+TODO("btree.h- fix drawing")
 /*
   the pointers to each part of any node can be represented as an array
-  of `short` integers. "pointing" to the other side of the page
+  of `uint_16t`s. "pointing" to the other side of the page
 
  data -> +----------------------+---------------------------+--------+
 	 |             	       	|  	     	            |  	     |
@@ -75,8 +74,8 @@ typedef struct int_btree_node {
 	 |						 	     |
 	 |		                          	 	     |
 	 |        +-----------+------------+-----------+-------------+
-	 |	  | 	      |		   |	       |	     |
-	 |        |     -1    |    -1      |    256    |    0        |
+	 |	  | 	      |		   |	       |             |
+	 |        |      0    |    0       |    256    |    type     |
 	 +--------+-----------+------------+-----------+-------------+ <- data/dir offset pointers
 
   both sides of the page grow toward each other, 
