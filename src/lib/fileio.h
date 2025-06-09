@@ -18,6 +18,9 @@
 
  */
 
+#ifndef FILEIOH
+#define FILEIOH
+
 #include "constants.h"
 
 typedef struct backing {
@@ -67,4 +70,4 @@ status free_page(backing *store, page_index index);
 status get_page(void *dest, backing *store, page_index index);
 status put_page(void *src, backing *store, page_index index);
 
-
+#endif

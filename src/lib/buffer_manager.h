@@ -17,11 +17,14 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
  */
-#include "constants.h"
+
+#ifndef BUFFERMANAGERH
+#define BUFFERMANAGERH
 
 // being used for hashtable only.
 #include <glib-2.0/glib.h>
 
+#include "constants.h"
 #include "fileio.h"
 
 typedef struct meta_frame {
@@ -63,14 +66,19 @@ typedef struct buffer_manager {
 } buffer_manager;
 
 // helpers
-frame_index get_frame_index(buffer_manager *manager, meta_frame *meta);
-
+frame_index get_frame_index_from_meta(buffer_manager *manager,
+                                      meta_frame *meta);
+frame_index get_frame_index_from_frame(buffer_manager *manager,
+                                       frame *frame);
 
 
 // buffer manager
 status buff_create(char *storename, buffer_manager **manager, int frames);
 status buff_destroy(buffer_manager **manager);
-status buff_pin(buffer_manager *manager, void **pinned, page_index index);
-status buff_unpin(buffer_manager *manager, void *frame);
-status buff_mark_page(buffer_manager *manager, void *frame);
+status buff_pin(buffer_manager *manager, frame **frame, page_index index);
+status buff_unpin(buffer_manager *manager, frame *frame);
+status buff_mark_page(buffer_manager *manager, frame *frame);
+//status buff_write_page(buffer_manager *manager, void *src, void *frame);
 status buff_flush_all(buffer_manager *manager);
+
+#endif

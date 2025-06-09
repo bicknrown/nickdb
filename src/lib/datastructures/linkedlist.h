@@ -17,10 +17,11 @@
    along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
  */
-#ifndef CONSTANTSH
-#define CONSTANTSH
+
+#ifndef LINKEDLISTH
+#define LINKEDLISTH
+
 #include "../constants.h"
-#endif
 
 TODO("linkedlist- pointer arithmetic structure")
 
@@ -519,3 +520,5 @@ static inline void hlist_add_after(struct hlist_node *n,
 	     pos && ({ n = pos->next; 1; }) && 				 \
 		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
 	     pos = n)
+
+#endif

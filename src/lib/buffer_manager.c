@@ -23,12 +23,22 @@
 
 #include "./buffer_manager.h"
 
+TODO("buffer_manager- factor out metadata page reads and writes to the structure on manager creation.")
+
 /*
-  calculate the frame index from any meta_frame in the free list.
+  calculate the frame pointer from any meta_frame in the free list.
  */
-frame_index get_frame_index(buffer_manager *man, meta_frame *meta)
+frame_index get_frame_index_from_meta(buffer_manager *man, meta_frame *meta)
 {
   return (((void *)meta) - ((void *)man->metaframes)) / sizeof(meta_frame);
+}
+
+/*
+  calculate the frame pointer from any frame in the buffer.
+ */
+frame_index get_frame_index_from_frame(buffer_manager *man, frame *frame_pointer)
+{
+  return (((void *)frame_pointer) - ((void *)man->buffer)) / sizeof(frame);
 }
 
 /*
@@ -97,7 +107,7 @@ status buff_destroy(buffer_manager **manager)
 
   // for every dirty frame we have, we need to write it back to the disk store.
   for (meta_frame *meta = (*manager)->writeback; meta != NULL; meta = meta->next_free_or_dirty){
-    status put = put_page((*manager)->buffer[get_frame_index((*manager), meta)], (*manager)->store, meta->index);
+    status put = put_page((*manager)->buffer[get_frame_index_from_meta((*manager), meta)], (*manager)->store, meta->index);
     if (put == STATUS_OK) {
       meta->state = FS_UNPINNED;
     }
@@ -124,7 +134,7 @@ status buff_destroy(buffer_manager **manager)
   return pointer `frame` to the pointer in the buffer array.
  */
 TODO("`buff_pin()`- move linked list operations out to a datastructure")
-status buff_pin(buffer_manager *manager, void **pinned, page_index index)
+status buff_pin(buffer_manager *manager, frame **frame, page_index index)
 {
   if (manager == NULL) {
     return STATUS_NO_MANAGER;
@@ -143,29 +153,27 @@ status buff_pin(buffer_manager *manager, void **pinned, page_index index)
   // claim the free page
   meta_frame *free_frame = manager->freelist;
   
-  frame_index frameidx = get_frame_index(manager, free_frame);
+  frame_index frameidx = get_frame_index_from_meta(manager, free_frame);
 
   // init for adding the binding to the hashtable.
-  page_index *pageidxptr = calloc(1, sizeof(page_index));
-  frame_index *frameidxptr = calloc(1, sizeof(frame_index));
-  *pageidxptr = index;
-  *frameidxptr = frameidx;
+  page_index pageidxptr = ERR_SET;
+  frame_index frameidxptr = ERR_SET;
+  pageidxptr = index;
+  frameidxptr = frameidx;
   
   // check if it exists in the table first.
-  frame_index *existing_frame = g_hash_table_lookup(manager->lookup_table, pageidxptr);
+  gpointer *existing_frame = g_hash_table_lookup(manager->lookup_table, &pageidxptr);
   
-  if (existing_frame != NULL && *existing_frame == *frameidxptr) {
-      gboolean insert = g_hash_table_insert(manager->lookup_table, pageidxptr, frameidxptr);
+  if (existing_frame == NULL) {
+      gboolean insert = g_hash_table_insert(manager->lookup_table, &pageidxptr, &frameidxptr);
       if (insert != true) {
-	free(pageidxptr);
-	free(frameidxptr);
 	return STATUS_ERR;
       }
   }
+  // if the page is already pinned, just return the frame pointer.
   else {
-    free(pageidxptr);
-    free(frameidxptr);
-    return STATUS_ERR;
+    *frame = &manager->buffer[frameidx];
+    return STATUS_OK;
   }
 
   // actually fetch the data from the disk.
@@ -183,7 +191,7 @@ status buff_pin(buffer_manager *manager, void **pinned, page_index index)
   manager->metaframes[frameidx].index = index;
   
   // set the pointer for the region.
-  *pinned = &manager->buffer[frameidx];
+  *frame = &manager->buffer[frameidx];
   
   return STATUS_OK;
 }
@@ -194,12 +202,12 @@ status buff_pin(buffer_manager *manager, void **pinned, page_index index)
   frame's meta data with FS_UNPINNED_DIRTY, and add it to writeback list.
  */
 TODO("`buff_unpin()`- move linked list operations out to a datastructure")
-status buff_unpin(buffer_manager *manager, void *frame)
+status buff_unpin(buffer_manager *manager, frame *frame)
 {
   if (manager == NULL) {
     return STATUS_NO_MANAGER;
   }
-  frame_index frameidx = get_frame_index(manager, frame);
+  frame_index frameidx = get_frame_index_from_frame(manager, frame);
 
   if (manager->metaframes[frameidx].state == FS_PINNED_DIRTY){
     manager->metaframes[frameidx].state = FS_UNPINNED_DIRTY;
@@ -254,12 +262,12 @@ status buff_unpin(buffer_manager *manager, void *frame)
   this function is used to mark frame/page pairs as dirty,
   this works for all page types except FS_UNPINNED.
  */
-status buff_mark_page(buffer_manager *manager, void *frame)
+status buff_mark_page(buffer_manager *manager, frame *frame)
 {
   if (manager == NULL) {
     return STATUS_NO_MANAGER;
   }
-  frame_index frameidx = get_frame_index(manager, frame);
+  frame_index frameidx = get_frame_index_from_frame(manager, frame);
 
   if (manager->metaframes[frameidx].state == FS_PINNED){
     manager->metaframes[frameidx].state = FS_PINNED_DIRTY;
@@ -288,7 +296,7 @@ status buff_flush_all(buffer_manager *manager)
 
   // for every dirty frame we have, we need to write it back to the disk store.
   for (meta_frame *meta = manager->writeback; meta != NULL; meta = meta->next_free_or_dirty){
-    status put = put_page(manager->buffer[get_frame_index(manager, meta)], manager->store, meta->index);
+    status put = put_page(manager->buffer[get_frame_index_from_meta(manager, meta)], manager->store, meta->index);
     if (put == STATUS_OK) {
       meta->state = FS_UNPINNED;
     }

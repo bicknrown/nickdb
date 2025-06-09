@@ -47,6 +47,10 @@
 typedef ssize_t page_index;
 typedef ssize_t byte_offset;
 
+typedef ssize_t frame_index;
+
+typedef char frame[PAGESIZE];
+
 typedef enum page_type{
   FREE_PAGE,
   DATA_PAGE,
@@ -60,9 +64,11 @@ typedef enum frame_state {
   FS_UNPINNED_DIRTY,
 } frame_state;
 
-typedef char frame[PAGESIZE];
+typedef struct page_frame_pair {
+  page_index page;
+  frame *frame;  
+} page_frame_pair;
 
-typedef ssize_t frame_index;
 
 /*
   a not awful way to emulate errno functionality with a compile time check.
@@ -89,6 +95,7 @@ typedef enum status {
   STATUS_NO_MANAGER,
 
   STATUS_NO_FREE_FRAMES,
+  STATUS_PIN_ERR,
   STATUS_UNPIN_ERR,
   STATUS_MARK_ERR,
   STATUS_FLUSH_ERR,
