@@ -18,15 +18,22 @@
 
  */
 
+#ifndef BTREEH
+#define BTREEH
+
 #include "../constants.h"
+#include "../buffer_manager.h"
 
 /*
   configuration structure
  */
 typedef struct btree_config {
   TODO("`btree_config`- fill out and create parameters")
-  page_index root;
-  
+  buffer_manager *manager;
+  page_frame_pair root;
+
+  size_t record_size;
+
 } btree_config;
 
 /*
@@ -34,8 +41,8 @@ typedef struct btree_config {
   all of the data about each of the nodes in the tree are stored
   in the pages which the `btree_node` points to.
  */
-typedef page_index btree;
-typedef page_index btree_node;
+typedef frame btree;
+typedef frame btree_node;
 
 /*
   internal node structures
@@ -45,7 +52,7 @@ typedef page_index btree_node;
 typedef struct int_btree_node {
   TODO("`int_btree_node`- create fields for casting")
   page_type type;
-  
+
   // the rest of the bytes on the page.
   char bytes[PAGESIZE - (
 			 sizeof(page_type)
@@ -53,9 +60,32 @@ typedef struct int_btree_node {
 } int_btree_node;
 
 /*
+  the pointers to each part of any node can be represented as an array
+  of `short` integers. "pointing" to the other side of the page
+
+ data -> +----------------------+---------------------------+--------+
+	 |             	       	|  	     	            |  	     |
+	 |      blah            |        something          |  	     |
+	 +----------------------+---------------------------+        |
+	 |                                   	 	 	     |
+	 |                                   	 	 	     |
+	 |					 	 	     |
+	 |                                       	 	     |
+	 |						 	     |
+	 |						 	     |
+	 |		                          	 	     |
+	 |        +-----------+------------+-----------+-------------+
+	 |	  | 	      |		   |	       |	     |
+	 |        |     -1    |    -1      |    256    |    0        |
+	 +--------+-----------+------------+-----------+-------------+ <- data/dir offset pointers
+
+  both sides of the page grow toward each other, 
+*/
+
+/*
   internal btree functions
  */
-status btree_create_node(page_index page, page_type type);
+status btree_create_node(btree_config *config, page_index page, page_type type, btree_node **node);
 
 
 /*
@@ -66,3 +96,5 @@ status btree_destroy(btree tree);
 
 status btree_insert();
 status btree_remove();
+
+#endif
