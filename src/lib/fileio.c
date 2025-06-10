@@ -189,6 +189,7 @@ status alloc_page(void *src, page_index *index, backing *file)
   }
   // read in the metadata.
   metadata = calloc(1, PAGESIZE);
+  blank_page = calloc(1, PAGESIZE);
   ssize_t read = pread(file->storefd, metadata, PAGESIZE, index_to_offset(0));
   if (read != PAGESIZE) {
     return_status = STATUS_BAD_READ;
@@ -216,13 +217,23 @@ status alloc_page(void *src, page_index *index, backing *file)
       metadata->freelist_head.offset = nextpage->offset;
     }
 
-    ssize_t write = pwrite(file->storefd, src, PAGESIZE, offset);
-    if (write != PAGESIZE) {
-      return_status = STATUS_BAD_WRITE;
-      *index = ERR_SET;
-      goto cleanup;
+    if (src != NULL){
+      ssize_t write = pwrite(file->storefd, src, PAGESIZE, offset);
+      if (write != PAGESIZE) {
+	return_status = STATUS_BAD_WRITE;
+	*index = ERR_SET;
+	goto cleanup;
+      }
     }
-
+    // if the src entry is null, then give them a blank page
+    else {
+      ssize_t blank_write = pwrite(file->storefd, blank_page, PAGESIZE, index_to_offset(offset));
+      if (blank_write != PAGESIZE) {
+	return_status = STATUS_BAD_WRITE;
+	*index = ERR_SET;
+	goto cleanup;
+      }
+    }
     ssize_t meta_write = pwrite(file->storefd, metadata, PAGESIZE, index_to_offset(0));
     if (meta_write != PAGESIZE) {
       return_status = STATUS_BAD_WRITE;
@@ -239,7 +250,6 @@ status alloc_page(void *src, page_index *index, backing *file)
   
   // current size is also the index of the next page to allocate.
   page_index newpage = metadata->size;
-  blank_page = calloc(1, PAGESIZE);
   ssize_t blank_write = pwrite(file->storefd, blank_page, PAGESIZE, index_to_offset(newpage));
   if (blank_write != PAGESIZE) {
     return_status = STATUS_BAD_WRITE;
@@ -247,11 +257,14 @@ status alloc_page(void *src, page_index *index, backing *file)
     goto cleanup;
   }
 
-  ssize_t data_write = pwrite(file->storefd, src, PAGESIZE, index_to_offset(newpage));
-  if (data_write != PAGESIZE) {
-    return_status = STATUS_BAD_WRITE;
-    *index = STATUS_ERR;
-    goto cleanup;
+  // if there is no data to write, don't.
+  if (src != NULL){
+    ssize_t data_write = pwrite(file->storefd, src, PAGESIZE, index_to_offset(newpage));
+    if (data_write != PAGESIZE) {
+      return_status = STATUS_BAD_WRITE;
+      *index = STATUS_ERR;
+      goto cleanup;
+    }
   }
 
   metadata->size = metadata->size + 1; // size is now 1KB larger.

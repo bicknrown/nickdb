@@ -73,11 +73,11 @@ frame_index get_frame_index_from_frame(buffer_manager *manager,
 
 
 // buffer manager
-TODO("create a passthrough for allocing a new page on disk and pin it.")
 status buff_create(char *storename, buffer_manager **manager, int frames);
 status buff_destroy(buffer_manager **manager);
 status buff_pin(buffer_manager *manager, frame **frame, page_index index);
 status buff_unpin(buffer_manager *manager, frame *frame);
+status buff_alloc_frame(buffer_manager *manager, page_frame_pair **page_frame);
 status buff_mark_page(buffer_manager *manager, frame *frame);
 status buff_flush_all(buffer_manager *manager);
 

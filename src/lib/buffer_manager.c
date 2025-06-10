@@ -22,6 +22,8 @@
 #include <string.h>
 
 #include "./buffer_manager.h"
+#include "constants.h"
+#include "fileio.h"
 
 TODO("buffer_manager- factor out metadata page reads and writes to the structure on manager creation.")
 
@@ -255,6 +257,40 @@ status buff_unpin(buffer_manager *manager, frame *frame)
     // there is most likely an issue
     return STATUS_ERR;
   }
+  return STATUS_OK;
+}
+
+/*
+  this function goes to the backing store to allocate a new page, and then
+  pin it into the buffer, giving the user both a page index and frame pointer.
+ */
+status buff_alloc_frame(buffer_manager *manager, page_frame_pair **page_frame)
+{
+  if (manager == NULL){
+    return STATUS_NO_MANAGER;
+  }
+  if (*page_frame == NULL){
+    return STATUS_ERR;
+  }
+
+  // first, we get a page from the store.
+  page_index page = ERR_SET;
+  status pagealloc = alloc_page(NULL, &page, manager->store);
+  if (pagealloc != STATUS_OK){
+    return pagealloc;
+  }
+  
+  // now, we can pin it to the buffer.
+  frame *frame = NULL;
+  status framepin = buff_pin(manager, &frame, page);
+  if (framepin != STATUS_OK){
+    return framepin;
+  }
+
+  // set the bundle, and return.
+  (*page_frame)->frame = frame;
+  (*page_frame)->page = page;
+  
   return STATUS_OK;
 }
 
