@@ -84,8 +84,8 @@ TODO("btree.h- fix drawing")
 /*
   internal btree functions
  */
-status btree_create_node(btree_config *config, page_index page, page_type type, btree_node **node);
-
+status btree_alloc_node(btree_config *config, page_type type, btree_node **node);
+status btree_free_node(btree_config *config, btree_node *node);
 
 /*
   btree functions

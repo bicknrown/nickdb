@@ -19,16 +19,31 @@
  */
 
 #include "btree.h"
+#include <string.h>
+
 
 /*
-
+  create a node of the given type from a frame given by
+  the buffer manager, and backed by a page on disk.
  */
-TODO("btree_create_node- create allocation suite for node data")
-status btree_create_node(btree_config *config, page_index page, page_type type, btree_node **node){
-  status root_pin = buff_pin(config->manager, node, page);
-  if (root_pin != STATUS_OK){
-    return STATUS_PIN_ERR;
+status btree_alloc_node(btree_config *config, page_type type, btree_node **node)
+{
+  if (config == NULL){
+    return STATUS_NO_CONFIG;
   }
+
+  // allocate the area to place the new node.
+  page_frame_pair page_frame;
+  page_frame.frame = NULL;
+  page_frame.page = ERR_SET;
+  status frame_alloc = buff_alloc_frame(config->manager, &page_frame);
+  if (frame_alloc != STATUS_OK){
+    return frame_alloc;
+  }
+
+  // set the frame location.
+  *node = page_frame.frame;
+
   switch (type)
     {
     case DIR_PAGE:
@@ -43,6 +58,27 @@ status btree_create_node(btree_config *config, page_index page, page_type type, 
       // if the type is just wrong, then we just leave.
       return STATUS_ERR;
     }
+  return STATUS_OK;
+}
+/*
+  free the given node, assuming it has already
+  been removed from the tree.
+ */
+status btree_free_node(btree_config *config, btree_node *node)
+{
+  if (config == NULL){
+    return STATUS_NO_CONFIG;
+  }
+  if (node == NULL){
+    return STATUS_OK;
+  }
+  // clear the node.
+  memset(node, 0, PAGESIZE);
+  // unpin the frame that the node was using.
+  status node_unpin = buff_unpin(config->manager, (frame *)node);
+  if (node_unpin != STATUS_OK) {
+    return node_unpin;
+  }
   
   return STATUS_OK;
 }
@@ -55,9 +91,10 @@ TODO("later... split directory.")
 
  */
 TODO("`btree_create()`- everything")
-status btree_create(btree_config *config){
+status btree_create(btree_config *config)
+{
   if (config == NULL){
-    return STATUS_NO_MANAGER;
+    return STATUS_NO_CONFIG;
   }
   
 
@@ -69,7 +106,8 @@ status btree_create(btree_config *config){
 
  */
 TODO("`btree_destroy()`- everything")
-status btree_destroy(btree tree){
+status btree_destroy(btree tree)
+{
   tree = tree + 1; // remove error of unused parameter.
   
   return STATUS_OK;
@@ -79,7 +117,8 @@ status btree_destroy(btree tree){
 
  */
 TODO("`btree_insert()`- everything")
-status btree_insert(){
+status btree_insert()
+{
 
   return STATUS_OK;
 }
@@ -88,7 +127,8 @@ status btree_insert(){
 
  */
 TODO("`btree_remove()`- everything")
-status btree_remove(){
+status btree_remove()
+{
 
   return STATUS_OK;
 }

@@ -264,12 +264,12 @@ status buff_unpin(buffer_manager *manager, frame *frame)
   this function goes to the backing store to allocate a new page, and then
   pin it into the buffer, giving the user both a page index and frame pointer.
  */
-status buff_alloc_frame(buffer_manager *manager, page_frame_pair **page_frame)
+status buff_alloc_frame(buffer_manager *manager, page_frame_pair *page_frame)
 {
   if (manager == NULL){
     return STATUS_NO_MANAGER;
   }
-  if (*page_frame == NULL){
+  if (page_frame == NULL){
     return STATUS_ERR;
   }
 
@@ -288,8 +288,8 @@ status buff_alloc_frame(buffer_manager *manager, page_frame_pair **page_frame)
   }
 
   // set the bundle, and return.
-  (*page_frame)->frame = frame;
-  (*page_frame)->page = page;
+  page_frame->frame = frame;
+  page_frame->page = page;
   
   return STATUS_OK;
 }
