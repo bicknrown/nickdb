@@ -295,6 +295,22 @@ status buff_alloc_frame(buffer_manager *manager, page_frame_pair *page_frame)
 }
 
 /*
+  unpin the given frame, and free it's underlying page on disk.
+ */
+status buff_free_frame(buffer_manager *manager, frame *frame){
+  if (manager == NULL){
+    return STATUS_NO_MANAGER;
+  }
+  if (frame == NULL){
+    return STATUS_ERR
+  }
+  // if the frame is freed, but is dirty, it's no longer dirty.
+  // call buff_unpin
+  // call free_page
+  return STATUS_OK;
+}
+
+/*
   this function is used to mark frame/page pairs as dirty,
   this works for all page types except FS_UNPINNED.
  */

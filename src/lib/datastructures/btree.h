@@ -25,13 +25,19 @@
 #include "../buffer_manager.h"
 
 /*
+  types for configuration.
+ */
+typedef int32_t btree_cmp_keys(void *first, void *second, size_t len);
+
+/*
   configuration structure
  */
 typedef struct btree_config {
   TODO("`btree_config`- fill out and create parameters")
   buffer_manager *manager;
   page_frame_pair root;
-
+  size_t key_size;
+  btree_cmp_keys *comparator;
 
 } btree_config;
 
@@ -84,18 +90,20 @@ TODO("btree.h- fix drawing")
 /*
   internal btree functions
  */
-int32_t btree_cmp_keys(void *first, void *second, size_t len, void *comparator);
+int32_t btree_default_cmp_keys(void *first, void *second, size_t len);
 
 /*
   btree functions
  */
-status btree_create(btree_config *config);
+status btree_create(btree_config *config); // put all the arguments of the config here.
 status btree_destroy(btree tree);
+status btree_open(btree_config *config); // ditto.
 
 status btree_alloc_node(btree_config *config, page_type type, btree_node **node);
 status btree_free_node(btree_config *config, btree_node *node);
+page_index btree_get_root_id(btree_config *config);
 
-status btree_insert();
-status btree_remove();
+status btree_insert(btree_config *config, void *key, void *value, size_t value_size);
+status btree_remove(btree_config *config);
 
 #endif

@@ -29,7 +29,7 @@
   to be less than, to match, or be greater than the first `len` bytes of second.
   if `len` is zero, the return value is zero.
  */
-int32_t btree_cmp_keys(void *first, void *second, size_t len, void *comparator){
+int32_t btree_default_cmp_keys(void *first, void *second, size_t len){
   int return_value = 0;
   if (len == 0){
     return return_value;
@@ -39,14 +39,10 @@ int32_t btree_cmp_keys(void *first, void *second, size_t len, void *comparator){
   if ((first == NULL) | (second == NULL)){
     return return_value;
   }
-  if (comparator == NULL){
-    // default is to use memcmp, very nice.
-    return_value = memcmp(first, second, len);
-  }
-  else{
-    TODO("cmp_keys- deal with user defined comparators.")
-    return return_value;
-  }
+
+  // default is to use memcmp, very nice.
+  return_value = memcmp(first, second, len);
+
   return return_value;
 }
 
@@ -58,6 +54,9 @@ status btree_alloc_node(btree_config *config, page_type type, btree_node **node)
 {
   if (config == NULL){
     return STATUS_NO_CONFIG;
+  }
+  if ((type != DIR_PAGE) && (type != DATA_PAGE)){
+    return STATUS_ERR;
   }
 
   // allocate the area to place the new node.
@@ -71,21 +70,9 @@ status btree_alloc_node(btree_config *config, page_type type, btree_node **node)
 
   // set the frame location.
   *node = page_frame.frame;
-
-  switch (type)
-    {
-    case DIR_PAGE:
-      ((int_btree_node *)node)->type = type;
-      
-      break;
-    case DATA_PAGE:
-      ((int_btree_node *)node)->type = type;
-      
-      break;
-    default:
-      // if the type is just wrong, then we just leave.
-      return STATUS_ERR;
-    }
+  
+  ((int_btree_node *)node)->type = type;
+  
   return STATUS_OK;
 }
 /*
@@ -104,6 +91,7 @@ status btree_free_node(btree_config *config, btree_node *node)
   memset(node, 0, PAGESIZE);
   // unpin the frame that the node was using.
   status node_unpin = buff_unpin(config->manager, (frame *)node);
+  TODO("free the disk page using free_page")
   if (node_unpin != STATUS_OK) {
     return node_unpin;
   }
@@ -114,6 +102,8 @@ status btree_free_node(btree_config *config, btree_node *node)
 TODO("split leaf")
 TODO("fill data(leaf) page until full")
 TODO("later... split directory.")
+
+
 
 /*
 
@@ -143,7 +133,18 @@ status btree_destroy(btree tree)
 
 /*
 
- */
+ */int32_t btree_cmp_keys(void *first, void *second, size_t len, void *comparator){
+  int return_value = 0;
+  if (len == 0){
+    return return_value;
+  }
+  // the pointer should not be null, but this seems like a reasonable way
+  // to handle it.
+  if ((first == NULL) | (second == NULL)){
+    return return_value;
+  }
+
+
 TODO("`btree_insert()`- everything")
 status btree_insert()
 {
