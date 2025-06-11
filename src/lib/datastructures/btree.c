@@ -19,8 +19,36 @@
  */
 
 #include "btree.h"
-#include <string.h>
 
+/*
+  compare two keys of a given length. if `comparator` is set to NULL,
+  the `memcmp` function is used.
+  
+  the function returns an integer less than, equal to, or greater than
+  zero if the first `len` bytes  of `first`  is  found,  respectively,
+  to be less than, to match, or be greater than the first `len` bytes of second.
+  if `len` is zero, the return value is zero.
+ */
+int32_t btree_cmp_keys(void *first, void *second, size_t len, void *comparator){
+  int return_value = 0;
+  if (len == 0){
+    return return_value;
+  }
+  // the pointer should not be null, but this seems like a reasonable way
+  // to handle it.
+  if ((first == NULL) | (second == NULL)){
+    return return_value;
+  }
+  if (comparator == NULL){
+    // default is to use memcmp, very nice.
+    return_value = memcmp(first, second, len);
+  }
+  else{
+    TODO("cmp_keys- deal with user defined comparators.")
+    return return_value;
+  }
+  return return_value;
+}
 
 /*
   create a node of the given type from a frame given by
