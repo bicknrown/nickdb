@@ -95,9 +95,19 @@ int32_t btree_default_cmp_keys(void *first, void *second, size_t len);
 /*
   btree functions
  */
-status btree_create(btree_config *config); // put all the arguments of the config here.
+status btree_create(btree_config *config,
+		    buffer_manager *manager,
+		    page_index root,
+		    size_t key_size,
+		    btree_cmp_keys *comparator
+		    );
+status btree_open(btree_config *config,
+		  buffer_manager *manager,
+		  page_index root,
+		  size_t key_size,
+		  btree_cmp_keys *comparator
+		  );
 status btree_destroy(btree tree);
-status btree_open(btree_config *config); // ditto.
 
 status btree_alloc_node(btree_config *config, page_type type, btree_node **node);
 status btree_free_node(btree_config *config, btree_node *node);

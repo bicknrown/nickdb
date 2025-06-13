@@ -87,13 +87,11 @@ status btree_free_node(btree_config *config, btree_node *node)
   if (node == NULL){
     return STATUS_OK;
   }
-  // clear the node.
-  memset(node, 0, PAGESIZE);
+
   // unpin the frame that the node was using.
-  status node_unpin = buff_unpin(config->manager, (frame *)node);
-  TODO("free the disk page using free_page")
-  if (node_unpin != STATUS_OK) {
-    return node_unpin;
+  status node_free = buff_free_frame(config->manager, node); 
+  if (node_free != STATUS_OK) {
+    return node_free;
   }
   
   return STATUS_OK;
@@ -108,14 +106,105 @@ TODO("later... split directory.")
 /*
 
  */
-TODO("`btree_create()`- everything")
-status btree_create(btree_config *config)
+status btree_create(btree_config *config,
+		    buffer_manager *manager,
+		    page_index root,
+		    size_t key_size,
+		    btree_cmp_keys *comparator
+		    )
 {
+  // check for all the important things.
   if (config == NULL){
     return STATUS_NO_CONFIG;
   }
-  
+  else if (manager == NULL){
+    return STATUS_NO_MANAGER;
+  }
+  else if (root < LOWEST_PAGE ||
+	   key_size < SMALLEST_KEY_SIZE){
+    return STATUS_ERR;
+  }
 
+  // set the fields.
+  config->manager = manager;
+  config->key_size = key_size;
+  config->root.page = root;
+
+  // set the default key comparator if the user doesn't supply one.
+  if (comparator == NULL){
+    config->comparator = btree_default_cmp_keys;
+  }
+  else {
+    config->comparator = comparator;
+  }
+
+  // pin the root node and get the frame location back, then store it.
+  frame *root_node = NULL;
+  status pin_root = buff_pin(config->manager, &root_node, root);
+  if (pin_root != STATUS_OK){
+    return pin_root;
+  }
+  config->root.frame = root_node;
+
+  /*
+    next steps:
+    - does the create need a root page argument?
+    - setup the root node as a dir page.
+    - allocate an empty leaf node and attach it to the root.
+   */
+  
+  return STATUS_OK;
+}
+
+/*
+  
+ */
+status btree_open(btree_config *config,
+		  buffer_manager *manager,
+		  page_index root,
+		  size_t key_size,
+		  btree_cmp_keys *comparator
+		  )
+{
+  // check for all the important stuff.
+  if (config == NULL){
+    return STATUS_NO_CONFIG;
+  }
+  else if (manager == NULL){
+    return STATUS_NO_MANAGER;
+  }
+  else if (root < LOWEST_PAGE ||
+	   key_size < SMALLEST_KEY_SIZE){
+    return STATUS_ERR;
+  }
+
+  // set the fields.
+  config->manager = manager;
+  config->key_size = key_size;
+  config->root.page = root;
+
+  // set the default key comparator if the user doesn't supply one.
+  if (comparator == NULL){
+    config->comparator = btree_default_cmp_keys;
+  }
+  else {
+    config->comparator = comparator;
+  }
+
+  // pin the root node and get the frame location back, then store it.
+  frame *root_node = NULL;
+  status pin_root = buff_pin(config->manager, &root_node, root);
+  if (pin_root != STATUS_OK){
+    return pin_root;
+  }
+  config->root.frame = root_node;
+
+  /*
+    next steps:
+    - open def needs the root page.
+    - no need to configure the storage because it should already be a tree.
+    - figure out what else open needs.
+   */
   
   return STATUS_OK;
 }

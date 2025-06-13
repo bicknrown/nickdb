@@ -39,6 +39,8 @@
 #define STOREEXT ".store"
 
 #define METADATA 0
+#define LOWEST_PAGE 1
+#define SMALLEST_KEY_SIZE 1
 
 /*
   types and states.
