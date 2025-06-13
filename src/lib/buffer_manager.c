@@ -302,11 +302,25 @@ status buff_free_frame(buffer_manager *manager, frame *frame){
     return STATUS_NO_MANAGER;
   }
   if (frame == NULL){
-    return STATUS_ERR
+    return STATUS_ERR;
   }
+  frame_index frameidx = get_frame_index_from_frame(manager, frame);
+  page_index page = manager->metaframes[frameidx].index;
+
   // if the frame is freed, but is dirty, it's no longer dirty.
-  // call buff_unpin
-  // call free_page
+  // therefore, we fake it, so unpin will just do the right thing.
+  manager->metaframes[frameidx].state = FS_PINNED;
+  status frame_unpin = buff_unpin(manager, frame);
+  if (frame_unpin != STATUS_OK){
+    return frame_unpin;
+  }
+
+  // now we can free the page on disk.
+  status page_free = free_page(manager->store, page);
+  if (page_free != STATUS_OK){
+    return page_free;
+  }
+  
   return STATUS_OK;
 }
 
