@@ -42,6 +42,8 @@
 #define LOWEST_PAGE 1
 #define SMALLEST_KEY_SIZE 1
 
+#define ARR_OFFSET 1
+
 /*
   types and states.
  */

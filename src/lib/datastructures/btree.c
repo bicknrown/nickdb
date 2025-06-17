@@ -70,8 +70,8 @@ status btree_alloc_node(btree_config *config, page_type type, btree_node **node)
 
   // set the frame location.
   *node = page_frame.frame;
-  
-  ((int_btree_node *)node)->type = type;
+  // dereference the double pointer to set the type.
+  (((int_btree_node *)*node)->type) = type;
   
   return STATUS_OK;
 }
@@ -104,11 +104,11 @@ TODO("later... split directory.")
 
 
 /*
-
+  create a btree from the supplied configuration parameters.
+  `config` is a pointer to an empty btree config.
  */
 status btree_create(btree_config *config,
 		    buffer_manager *manager,
-		    page_index root,
 		    size_t key_size,
 		    btree_cmp_keys *comparator
 		    )
@@ -120,15 +120,21 @@ status btree_create(btree_config *config,
   else if (manager == NULL){
     return STATUS_NO_MANAGER;
   }
-  else if (root < LOWEST_PAGE ||
-	   key_size < SMALLEST_KEY_SIZE){
-    return STATUS_ERR;
-  }
-
-  // set the fields.
+  // set the fields that we already have.
   config->manager = manager;
   config->key_size = key_size;
-  config->root.page = root;
+  
+  // new tree, allocate a new root.
+  btree_node *root_frame = NULL;
+  status root_status = btree_alloc_node(config, DIR_PAGE, &root_frame);
+  if (root_status != STATUS_OK) {
+    return root_status;
+  }
+
+  // now we can set the root node in the config using the pointer to the node.
+  config->root =
+    config->manager->metaframes[get_frame_index_from_frame(config->manager,
+									root_frame)].index;
 
   // set the default key comparator if the user doesn't supply one.
   if (comparator == NULL){
@@ -138,21 +144,43 @@ status btree_create(btree_config *config,
     config->comparator = comparator;
   }
 
-  // pin the root node and get the frame location back, then store it.
-  frame *root_node = NULL;
-  status pin_root = buff_pin(config->manager, &root_node, root);
-  if (pin_root != STATUS_OK){
-    return pin_root;
+  // now we can create the empty child leaf node.
+  btree_node *leaf_frame = NULL;
+  status leaf_status = btree_alloc_node(config, DATA_PAGE, &leaf_frame);
+  if (leaf_status != STATUS_OK) {
+    return leaf_status;
   }
-  config->root.frame = root_node;
+  page_index leaf_page =
+    config->manager->metaframes[get_frame_index_from_frame(config->manager,
+									leaf_frame)].index;
+  // accessing the page pointer list.
+  dir *root_dir_pointer_list =
+    (void *)(((int_btree_node *)root_frame)->bytes);
 
+  // accessing the separator value list
+  /*separator *root_dir_separator_list =
+    &(((int_btree_node *)root_frame)->bytes[(PAGESIZE - sizeof(page_type) - ARR_OFFSET)]);*/
+
+  // now we take the empty child page index, and insert it as the first pointer,
+  // with no separator values.
+  root_dir_pointer_list[1] = leaf_page;
+
+  // unpin both of the new node pages.
+  status leaf_unpin = buff_unpin(config->manager, leaf_frame);
+  if (leaf_unpin != STATUS_OK) {
+    return leaf_unpin;
+  }
+  status root_unpin = buff_unpin(config->manager, root_frame);
+  if (root_unpin != STATUS_OK) {
+    return root_unpin;
+  }
   /*
     next steps:
     - does the create need a root page argument?
     - setup the root node as a dir page.
     - allocate an empty leaf node and attach it to the root.
    */
-  
+
   return STATUS_OK;
 }
 
@@ -181,7 +209,7 @@ status btree_open(btree_config *config,
   // set the fields.
   config->manager = manager;
   config->key_size = key_size;
-  config->root.page = root;
+  config->root = root;
 
   // set the default key comparator if the user doesn't supply one.
   if (comparator == NULL){
@@ -191,21 +219,14 @@ status btree_open(btree_config *config,
     config->comparator = comparator;
   }
 
-  // pin the root node and get the frame location back, then store it.
-  frame *root_node = NULL;
-  status pin_root = buff_pin(config->manager, &root_node, root);
-  if (pin_root != STATUS_OK){
-    return pin_root;
-  }
-  config->root.frame = root_node;
-
   /*
     next steps:
     - open def needs the root page.
     - no need to configure the storage because it should already be a tree.
     - figure out what else open needs.
    */
-  
+
+  // unpin all pinned pages.
   return STATUS_OK;
 }
 
@@ -220,24 +241,19 @@ status btree_destroy(btree tree)
   return STATUS_OK;
 }
 
-/*
-
- */int32_t btree_cmp_keys(void *first, void *second, size_t len, void *comparator){
-  int return_value = 0;
-  if (len == 0){
-    return return_value;
-  }
-  // the pointer should not be null, but this seems like a reasonable way
-  // to handle it.
-  if ((first == NULL) | (second == NULL)){
-    return return_value;
-  }
-
 
 TODO("`btree_insert()`- everything")
-status btree_insert()
+status btree_insert(btree_config *config, void *key, void *value, size_t value_size)
 {
-
+  if (config == NULL) {
+    return STATUS_NO_CONFIG;
+  }
+  if (key == NULL) {
+    return STATUS_ERR;
+  }
+  if (value_size == 0 && value != NULL) {
+    return STATUS_ERR;
+  }
   return STATUS_OK;
 }
 
@@ -245,8 +261,10 @@ status btree_insert()
 
  */
 TODO("`btree_remove()`- everything")
-status btree_remove()
+status btree_remove(btree_config *config)
 {
-
+  if (config == NULL) {
+    return STATUS_NO_CONFIG;
+  }
   return STATUS_OK;
 }

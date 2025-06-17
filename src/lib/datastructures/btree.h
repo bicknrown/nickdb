@@ -33,9 +33,8 @@ typedef int32_t btree_cmp_keys(void *first, void *second, size_t len);
   configuration structure
  */
 typedef struct btree_config {
-  TODO("`btree_config`- fill out and create parameters")
   buffer_manager *manager;
-  page_frame_pair root;
+  page_index root;
   size_t key_size;
   btree_cmp_keys *comparator;
 
@@ -48,6 +47,9 @@ typedef struct btree_config {
  */
 typedef frame btree;
 typedef frame btree_node;
+
+typedef page_index dir;
+typedef void separator;
 
 /*
   internal node structures
@@ -97,7 +99,6 @@ int32_t btree_default_cmp_keys(void *first, void *second, size_t len);
  */
 status btree_create(btree_config *config,
 		    buffer_manager *manager,
-		    page_index root,
 		    size_t key_size,
 		    btree_cmp_keys *comparator
 		    );
