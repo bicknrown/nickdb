@@ -51,6 +51,9 @@ typedef frame btree_node;
 typedef page_index dir;
 typedef void separator;
 
+typedef int16_t record;
+typedef void data;
+
 /*
   internal node structures
   these structures are used strictly for casting on top of pages.
@@ -114,7 +117,9 @@ status btree_alloc_node(btree_config *config, page_type type, btree_node **node)
 status btree_free_node(btree_config *config, btree_node *node);
 page_index btree_get_root_id(btree_config *config);
 
-status btree_insert(btree_config *config, void *key, void *value, size_t value_size);
+status btree_insert(btree_config *config, void *key, data *value, size_t value_size);
 status btree_remove(btree_config *config);
+
+status btree_get(btree_config *config, void *key, data **value);
 
 #endif

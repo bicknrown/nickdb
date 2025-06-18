@@ -243,6 +243,9 @@ status btree_destroy(btree tree)
 
 
 TODO("`btree_insert()`- everything")
+/*
+  take the given key and value, and insert them into the tree.
+ */
 status btree_insert(btree_config *config, void *key, void *value, size_t value_size)
 {
   if (config == NULL) {
@@ -254,6 +257,38 @@ status btree_insert(btree_config *config, void *key, void *value, size_t value_s
   if (value_size == 0 && value != NULL) {
     return STATUS_ERR;
   }
+
+  /*
+    - take and pin the root from the config
+    - check if the separator list is empty.
+      - if it is, follow the first pointer
+        - pin the first datapage.
+        - put the key as the first separator value
+	- copy the value to the leaf, and set it's `record` pointer to
+	the correct offset.
+      - unpin all pages that were accessed, working backwards.
+      - let's roll out!
+	
+      - if it is not, compare the separator value to the given key.
+        - follow which ever pointer the comparison decided.
+	- pin the selected datapage/dirpage.
+	- if the type is another dirpage:
+	  - if the separator list is empty, follow the first pointer.
+	    - recurse until datapage.
+	      - copy the value to the leaf, and set it's `record` pointer to
+	the correct offset.
+	- unpin all pages that were accessed, working backwards.
+	- we are done!
+	
+	  - if it is not, do a comparison with the key.
+	    - follow the pointer from the comparison
+	    - recurse until datapage.
+	      - copy the value to the leaf, and set it's `record` pointer to
+	the correct offset.
+	- unpin all pages that were accessed, working backwards.
+	- fin.
+   */
+  
   return STATUS_OK;
 }
 
