@@ -44,6 +44,11 @@
 
 #define ARR_OFFSET 1
 
+#define END_OF_PAGE (PAGESIZE - sizeof(page_type))
+#define START_OF_DATA END_OF_PAGE
+
+#define RECORD_BOUNDS(x) (x <= (record)sizeof(page_type) || x >= (record)START_OF_DATA)
+
 /*
   types and states.
  */

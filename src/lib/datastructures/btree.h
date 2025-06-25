@@ -23,6 +23,7 @@
 
 #include "../constants.h"
 #include "../buffer_manager.h"
+#include <bits/stdint-intn.h>
 
 /*
   types for configuration.
@@ -60,7 +61,6 @@ typedef void data;
   they should never be allocated!
  */
 typedef struct int_btree_node {
-  TODO("`int_btree_node`- create fields for casting")
   page_type type;
 
   // the rest of the bytes on the page.
@@ -68,34 +68,22 @@ typedef struct int_btree_node {
 			 sizeof(page_type)
 			 )];
 } int_btree_node;
-TODO("btree.h- fix drawing")
-/*
-  the pointers to each part of any node can be represented as an array
-  of `uint_16t`s. "pointing" to the other side of the page
-
- data -> +----------------------+---------------------------+--------+
-	 |             	       	|  	     	            |  	     |
-	 |      blah            |        something          |  	     |
-	 +----------------------+---------------------------+        |
-	 |                                   	 	 	     |
-	 |                                   	 	 	     |
-	 |					 	 	     |
-	 |                                       	 	     |
-	 |						 	     |
-	 |						 	     |
-	 |		                          	 	     |
-	 |        +-----------+------------+-----------+-------------+
-	 |	  | 	      |		   |	       |             |
-	 |        |      0    |    0       |    256    |    type     |
-	 +--------+-----------+------------+-----------+-------------+ <- data/dir offset pointers
-
-  both sides of the page grow toward each other, 
-*/
 
 /*
   internal btree functions
  */
+int64_t btree_get_key_sep_size(void *key);
+
 int32_t btree_default_cmp_keys(void *first, void *second, size_t len);
+
+dir *btree_get_dir_list(btree_node *node);
+separator *btree_get_sep_list(btree_node *node);
+
+record* btree_get_record_list(btree_node *node);
+void *btree_get_record_data(btree_node *node, record number);
+
+status btree_insert_sep_value(btree_node *node, separator *sep);
+status btree_insert_record_value(btree_node *node, record number, void *data, size_t length);
 
 /*
   btree functions
@@ -117,7 +105,7 @@ status btree_alloc_node(btree_config *config, page_type type, btree_node **node)
 status btree_free_node(btree_config *config, btree_node *node);
 page_index btree_get_root_id(btree_config *config);
 
-status btree_insert(btree_config *config, void *key, data *value, size_t value_size);
+status btree_insert(btree_config *config, void *key, data *value, size_t value_length);
 status btree_remove(btree_config *config);
 
 status btree_get(btree_config *config, void *key, data **value);

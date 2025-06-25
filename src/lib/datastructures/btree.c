@@ -21,6 +21,25 @@
 #include "btree.h"
 
 /*
+  given a pointer to a key, which ends with the NUL value `\0`,
+  return the length of the key in bytes, not including the NUL byte.
+  returns ERR_SET in error
+ */
+int64_t btree_get_key_sep_size(void *key)
+{
+  int64_t length = 0;
+  if (key == NULL) {
+    return ERR_SET;
+  }
+
+  // count the number of bytes before the NUL.
+  for (/* ;) */; ((char *)key)[length] != '\0'; length++)
+    ;
+  
+  return length;
+}
+
+/*
   compare two keys of a given length. if `comparator` is set to NULL,
   the `memcmp` function is used.
   
@@ -44,6 +63,72 @@ int32_t btree_default_cmp_keys(void *first, void *second, size_t len){
   return_value = memcmp(first, second, len);
 
   return return_value;
+}
+
+/*
+  given a node of the type `DIR_PAGE`, return a pointer to the list of pages.
+ */
+dir *btree_get_dir_list(btree_node *node)
+{
+  return (dir *)(((int_btree_node *)node)->bytes);
+}
+
+/*
+  given a node of the type 'DIR_PAGE', return a pointer to the list of
+  separator values.
+ */
+separator *btree_get_sep_list(btree_node *node)
+{
+  return &(((int_btree_node *)node)->bytes[END_OF_PAGE - ARR_OFFSET]);
+}
+
+/*
+  given a node of type `DATA_PAGE`, return a pointer to the list of records.
+ */
+record *btree_get_record_list(btree_node *node)
+{
+  return (record *)(((int_btree_node *)node)->bytes);
+}
+
+/*
+  given a node of type `DATA_PAGE`, and a record, return a pointer to the data
+  referred to by the record, or NULL in error.
+ */
+void *btree_get_record_data(btree_node *node, record number)
+{
+  return &(((int_btree_node *)node)->bytes[number]);
+}
+
+/*
+  insert a separator value into the correct location in
+  the list for the given directory node.
+  
+ */
+status btree_insert_sep_value(btree_node *node, separator *sep)
+{
+  if (node == NULL || sep == NULL) {
+    return STATUS_ERR;
+  }
+  TODO("finish insert for separator values.")
+  return STATUS_OK;
+}
+
+/*
+  insert record data at the supplied offset in the given data node.
+ */
+status btree_insert_record_value(btree_node *node, record number, void *data,
+                                 size_t length)
+{
+  if (node == NULL || RECORD_BOUNDS(number)) {
+    return STATUS_ERR;
+  }
+  // we can allow for empty values.
+  if (data == NULL && length != 0) {
+    return STATUS_ERR;
+  }
+
+  TODO("finish comparisons for inserting record values..")
+  return STATUS_OK;
 }
 
 /*
@@ -96,12 +181,6 @@ status btree_free_node(btree_config *config, btree_node *node)
   
   return STATUS_OK;
 }
-
-TODO("split leaf")
-TODO("fill data(leaf) page until full")
-TODO("later... split directory.")
-
-
 
 /*
   create a btree from the supplied configuration parameters.
@@ -242,11 +321,10 @@ status btree_destroy(btree tree)
 }
 
 
-TODO("`btree_insert()`- everything")
 /*
   take the given key and value, and insert them into the tree.
  */
-status btree_insert(btree_config *config, void *key, void *value, size_t value_size)
+status btree_insert(btree_config *config, void *key, void *value, size_t value_length)
 {
   if (config == NULL) {
     return STATUS_NO_CONFIG;
@@ -254,8 +332,43 @@ status btree_insert(btree_config *config, void *key, void *value, size_t value_s
   if (key == NULL) {
     return STATUS_ERR;
   }
-  if (value_size == 0 && value != NULL) {
+  if (value_length == 0 && value != NULL) {
     return STATUS_ERR;
+  }
+
+  // pin the root (directory) page.
+  frame *root_frame = NULL;
+  status root_pin = buff_pin(config->manager, &root_frame, config->root);
+  if (root_pin != STATUS_OK || root_frame == NULL) {
+    return root_pin;
+  }
+  // for clarity of use.
+  btree_node *root_node = root_frame;
+
+  separator *root_sep_list = btree_get_sep_list(root_node);
+
+  // if there are no separators in the list.
+  if (*(char *)root_sep_list == '\0') {
+    // follow the first page pointer.
+    dir *dir_list = btree_get_dir_list(root_node);
+    dir first_page = dir_list[0];
+    // pin the first datapage
+    frame *data_frame = NULL;
+    status datapage_pin = buff_pin(config->manager, &data_frame, first_page);
+    if (datapage_pin != STATUS_OK) {
+      return datapage_pin;
+    }
+
+    // again, for clarity.
+    //btree_node first_data_node = *data_frame;
+    TODO("btree_insert() - continue walking the logic.")
+
+    
+    
+  }
+  // if there are separators in the list.
+  else {
+    
   }
 
   /*
@@ -303,3 +416,5 @@ status btree_remove(btree_config *config)
   }
   return STATUS_OK;
 }
+
+TODO("split leaf, fill data(leaf) page until full. later... split directory.")
