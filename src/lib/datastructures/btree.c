@@ -19,6 +19,7 @@
  */
 
 #include "btree.h"
+#include <string.h>
 
 /*
   given a pointer to a key, which ends with the NUL value `\0`,
@@ -77,9 +78,18 @@ dir *btree_get_dir_list(btree_node *node)
   given a node of the type 'DIR_PAGE', return a pointer to the list of
   separator values.
  */
-separator *btree_get_sep_list(btree_node *node)
+separator *btree_get_sep_list(btree_config *config, btree_node *node)
 {
-  return &(((int_btree_node *)node)->bytes[END_OF_PAGE - ARR_OFFSET]);
+  return &(((int_btree_node *)node)->bytes[END_OF_PAGE - (config->key_size)]);
+}
+
+/*
+  get a particular pointer from an index for a separator value in a node.
+  there are left and right separators, this returns the left.
+ */
+separator *btree_get_sep(btree_config *config, btree_node *node, size_t index)
+{
+  return &(((int_btree_node *)node)->bytes[START_OF_SEP - (((config->key_size) * 2) * (index + ARR_OFFSET))]); 
 }
 
 /*
@@ -104,11 +114,49 @@ void *btree_get_record_data(btree_node *node, record number)
   the list for the given directory node.
   
  */
-status btree_insert_sep_value(btree_node *node, separator *sep)
+status btree_insert_sep_value(btree_config *config, btree_node *node, separator *sep)
 {
   if (node == NULL || sep == NULL) {
     return STATUS_ERR;
   }
+  separator *blank = calloc(1,config->key_size);
+  bool ltflag = false;
+  bool gtflag = false;
+  // get the first separator.
+  size_t index = 0;
+  separator *sep_start = btree_get_sep(config, node, index);
+  // find where the separator should go.
+  while (memcmp(&blank, sep_start, config->key_size) != 0) {
+    // left
+    if (index % 2 == 0) {
+      // compare the separators
+      if (memcmp(sep, sep_start, config->key_size) < 0){
+	ltflag = true;
+      }
+      else if (memcmp(sep, sep_start, config->key_size) > 0) {
+	gtflag = true;
+      }
+      // move on
+      sep_start = &sep_start[RIGHT_SEP(config->key_size)];
+    }
+    // right
+    else {
+      if (memcmp(sep, sep_start, config->key_size) < 0){
+	ltflag = true;
+      }
+      else if (memcmp(sep, sep_start, config->key_size) > 0) {
+	gtflag = true;
+      }
+      // move on
+      index++;
+      sep_start = btree_get_sep(config, node, index);
+    }
+    // if both flags are set, we have reached where the separator should go.
+    if (ltflag && gtflag) {
+      
+    }
+  }
+
   TODO("finish insert for separator values.")
   return STATUS_OK;
 }

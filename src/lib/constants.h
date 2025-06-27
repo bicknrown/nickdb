@@ -46,6 +46,9 @@
 
 #define END_OF_PAGE (PAGESIZE - sizeof(page_type))
 #define START_OF_DATA END_OF_PAGE
+#define START_OF_SEP START_OF_DATA
+#define LEFT_SEP(x) 0
+#define RIGHT_SEP(x) x
 
 #define RECORD_BOUNDS(x) (x <= (record)sizeof(page_type) || x >= (record)START_OF_DATA)
 
